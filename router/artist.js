@@ -9,9 +9,9 @@ router.post('/create', isAuth, isAdmin, uploadImage.single('avatar'), artistInfo
 router.post('/update/:id', isAuth, isAdmin, uploadImage.single('avatar'), artistInfoValidator, validate, artistCtrl.updateArtist);
 router.delete("/:id", isAuth, isAdmin, artistCtrl.removeArtist);
 
-router.get("/search", artistCtrl.searchActor);
-router.get("/latest", artistCtrl.getLatestActors);
-router.get("/:id", artistCtrl.getSingleActor);
+router.get("/search", artistCtrl.searchArtist);
+router.get("/latest", artistCtrl.getLatestArtist);
+router.get("/:id", artistCtrl.getSingleArtist);
 
 export default router;
 

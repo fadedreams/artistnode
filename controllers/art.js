@@ -1,31 +1,91 @@
 
-import Artist from '../models/artist.js'
+import Art from '../models/art.js'
 import cloudinary from "../cloud/index.js"
 import { uploadImageToCloud, formatArtist } from "../utils/helper.js"
 
-export const createArtist = async (req, res) => {
-  const { name, about, gender } = req.body;
-  const { file } = req;
+//export const createArtPrev1 = async (req, res) => {
+//const { file } = req;
+//if (!file) return sendError(res, "video file is missing!");
 
-  const newArtist = new Artist({ name, about, gender });
+//try {
+//const { secure_url: url, public_id } = await cloudinary.uploader.upload(
+//file.path,
+//{
+//resource_type: "video",
+//}
+//);
+//res.status(201).json({ url, public_id });
+//} catch (error) {
+//console.error("Error uploading video:", error);
+//res.status(500).json({ error: "Error uploading video" });
+//}
+//};
+export const createArtPrev = async (req, res) => {
+  const { file } = req;
+  if (!file) return sendError(res, "image file is missing!");
+
+  try {
+    const { secure_url: url, public_id } = await cloudinary.uploader.upload(
+      file.path,
+      {
+        resource_type: "image",
+      }
+    );
+    res.status(201).json({ url, public_id });
+  } catch (error) {
+    console.error("Error uploading image:", error);
+    res.status(500).json({ error: "Error uploading image" });
+  }
+};
+
+export const createArt = async (req, res) => {
+  const { file, body } = req;
+  const {
+    title,
+    director,  // Director should be a valid ObjectId
+    releaseDate,  // Corrected "releaseDate" field name
+    status,
+    type,
+    artcats,  // Art categories should be an array of strings
+    tags,
+    artists,  // Artists should be an array of valid ObjectIds
+    writers,  // Writers should be an array of valid ObjectIds
+    poster,
+  } = body;
+
+  const newArt = new Art({
+    title,
+    director,
+    releaseDate,
+    status,
+    type,
+    artcats,
+    tags,
+    artists,
+    writers,
+    poster,
+  });
 
   if (file) {
     const { url, public_id } = await uploadImageToCloud(file.path);
-    newArtist.avatar = { url, public_id };
+    newArt.poster = { url, public_id };
   }
-  await newArtist.save();
-  res.status(201).json({
-    id: newArtist._id,
-    name,
-    about: about,
-    gender,
-    avatar: newArtist?.avatar.url
-  });
-  //res.status(201).json({ 'artist': newArtist });
-  //res.status(201).json({ artist: formatArtist(newArtist) });
+
+  try {
+    await newArt.save();
+    res.status(201).json({
+      id: newArt._id,
+      title: newArt.title,
+      // Include other fields as needed in the response
+    });
+  } catch (error) {
+    // Handle the error and send an error response
+    console.error("Error creating art:", error);
+    res.status(500).json({ error: "Error creating art" });
+  }
 };
 
-export const updateArtist = async (req, res) => {
+export const updateArt = async (req, res) => {
   const { name, about, gender } = req.body;
   const { file } = req;
 
@@ -59,7 +119,7 @@ export const updateArtist = async (req, res) => {
   });
 };
 
-export const removeArtist = async (req, res) => {
+export const removeArt = async (req, res) => {
   const { id } = req.params;
 
   //if (!isValidObjectId(id)) return sendError(res, "Invalid request!");
@@ -82,11 +142,11 @@ export const removeArtist = async (req, res) => {
   res.json({ message: "Record removed successfully." });
 };
 
-export const searchArtist = async (req, res) => {
+export const searchArt = async (req, res) => {
   const { name } = req.query;
   //const result = await Artist.find({ $text: { $search: `"${query.name}"` } });
   if (!name.trim()) return res.json({ results: [] });
-  const result = await Artist.find({
+  const result = await Art.find({
     name: { $regex: name, $options: "i" },
   });
 
@@ -94,28 +154,28 @@ export const searchArtist = async (req, res) => {
   res.json({ results: artist });
 }
 
-export const getLatestArtist = async (req, res) => {
-  const result = await Artist.find().sort({ createdAt: "-1" }).limit(12);
+export const getLatestArt = async (req, res) => {
+  const result = await Art.find().sort({ createdAt: "-1" }).limit(12);
 
   const artist = result.map((artist) => formatArtist(artist));
 
   res.json(artist);
 };
 
-export const getSingleArtist = async (req, res) => {
+export const getSingleArt = async (req, res) => {
   const { id } = req.params;
 
   //if (!isValidObjectId(id)) res.status(404).json({ message: "Invalid request!" });
 
-  const artist = await Artist.findById(id);
+  const artist = await Art.findById(id);
   if (!artist) res.status(404).json({ message: "Record not found!" });
   res.json({ artist: formatArtist(artist) });
 };
 
-export const getActors = async (req, res) => {
+export const getArt = async (req, res) => {
   const { pageNo, limit } = req.query;
 
-  const artist = await Artist.find({})
+  const artist = await Art.find({})
     .sort({ createdAt: -1 })
     .skip(parseInt(pageNo) * parseInt(limit))
     .limit(parseInt(limit));
@@ -125,4 +185,5 @@ export const getActors = async (req, res) => {
     profiles,
   });
 };
+
 
