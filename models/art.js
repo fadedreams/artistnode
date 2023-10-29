@@ -54,7 +54,7 @@ const artSchema = new mongoose.Schema(
       },
       required: false,
     },
-
+    reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
   },
   { timestamps: true }
 );

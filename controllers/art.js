@@ -1,7 +1,8 @@
 
 import Art from '../models/art.js'
+import Review from '../models/review.js'
 import cloudinary from "../cloud/index.js"
-import { uploadImageToCloud, formatArtist } from "../utils/helper.js"
+import { uploadImageToCloud, averageRatingPipeline } from "../utils/helper.js"
 
 //export const createArtPrev1 = async (req, res) => {
 //const { file } = req;
@@ -42,14 +43,14 @@ export const createArt = async (req, res) => {
   const { file, body } = req;
   const {
     title,
-    director,  // Director should be a valid ObjectId
-    releaseDate,  // Corrected "releaseDate" field name
+    director,
+    releaseDate,
     status,
     type,
-    artcats,  // Art categories should be an array of strings
+    artcats,
     tags,
-    artists,  // Artists should be an array of valid ObjectIds
-    writers,  // Writers should be an array of valid ObjectIds
+    artists,
+    writers,
     poster,
   } = body;
 
@@ -67,8 +68,32 @@ export const createArt = async (req, res) => {
   });
 
   if (file) {
-    const { url, public_id } = await uploadImageToCloud(file.path);
-    newArt.poster = { url, public_id };
+    const {
+      secure_url: url,
+      public_id,
+      responsive_breakpoints,
+    } = await cloudinary.uploader.upload(file.path, {
+      transformation: {
+        width: 1280,
+        height: 720,
+      },
+      responsive_breakpoints: {
+        create_derived: true,
+        max_width: 640,
+        max_images: 3,
+      },
+    });
+
+    const finalPoster = { url, public_id, responsive: [] };
+
+    const { breakpoints } = responsive_breakpoints[0];
+    if (breakpoints.length) {
+      for (let imgObj of breakpoints) {
+        const { secure_url } = imgObj;
+        finalPoster.responsive.push(secure_url);
+      }
+    }
+    newMovie.poster = finalPoster;
   }
 
   try {
@@ -90,10 +115,10 @@ export const updateArt = async (req, res) => {
   const { file } = req;
 
   const { id } = req.params;
-  const artist = await Artist.findById(id)
-  if (!artist) { return res.status(404).json({ message: `No artist with id: ${id}` }); }
+  const art = await Art.findById(id)
+  if (!art) { return res.status(404).json({ message: `No art with id: ${id}` }); }
 
-  const public_id = artist.avatar?.public_id;
+  const public_id = art.avatar?.public_id;
   if (public_id && file) {
     const { result } = await cloudinary.uploader.destroy(public_id);
     if (result !== "ok") {
@@ -102,20 +127,20 @@ export const updateArt = async (req, res) => {
   }
   if (file) {
     const { url, public_id } = await uploadImageToCloud(file.path);
-    artist.avatar = { url, public_id };
+    art.avatar = { url, public_id };
   }
 
-  artist.name = name;
-  artist.about = about;
-  artist.gender = gender;
-  await artist.save();
+  art.name = name;
+  art.about = about;
+  art.gender = gender;
+  await art.save();
 
   res.status(201).json({
-    id: artist._id,
+    id: art._id,
     name,
     about: about,
     gender,
-    avatar: artist?.avatar.url
+    avatar: art?.avatar.url
   });
 };
 
@@ -123,11 +148,11 @@ export const removeArt = async (req, res) => {
   const { id } = req.params;
 
   //if (!isValidObjectId(id)) return sendError(res, "Invalid request!");
-  const artist = await Artist.findById(id);
-  console.log(artist)
-  if (!artist) return res.status(404).json({ message: "Record not found!" });
+  const art = await Art.findById(id);
+  console.log(art)
+  if (!art) return res.status(404).json({ message: "Record not found!" });
 
-  const public_id = artist.avatar?.public_id;
+  const public_id = art.avatar?.public_id;
 
   // remove old image if there was one!
   if (public_id) {
@@ -137,52 +162,112 @@ export const removeArt = async (req, res) => {
     }
   }
 
-  await Artist.findByIdAndDelete(id);
+  await Art.findByIdAndDelete(id);
 
   res.json({ message: "Record removed successfully." });
 };
 
 export const searchArt = async (req, res) => {
   const { name } = req.query;
-  //const result = await Artist.find({ $text: { $search: `"${query.name}"` } });
+  //const result = await Art.find({ $text: { $search: `"${query.name}"` } });
   if (!name.trim()) return res.json({ results: [] });
   const result = await Art.find({
     name: { $regex: name, $options: "i" },
   });
 
-  const artist = result.map((artist) => formatArtist(artist));
-  res.json({ results: artist });
+  res.json({ art });
 }
 
 export const getLatestArt = async (req, res) => {
   const result = await Art.find().sort({ createdAt: "-1" }).limit(12);
 
-  const artist = result.map((artist) => formatArtist(artist));
-
-  res.json(artist);
+  res.json(art);
 };
 
-export const getSingleArt = async (req, res) => {
-  const { id } = req.params;
+exports.getSingleArt = async (req, res) => {
+  const { idr } = req.params;
 
-  //if (!isValidObjectId(id)) res.status(404).json({ message: "Invalid request!" });
+  // mongoose.Types.ObjectId(id)
 
-  const artist = await Art.findById(id);
-  if (!artist) res.status(404).json({ message: "Record not found!" });
-  res.json({ artist: formatArtist(artist) });
+  if (!isValidObjectId(idr))
+    return sendError(res, "Art id is not valid!");
+
+  const art = await Art.findById(idr).populate(
+    "director writers cast.actor"
+  );
+
+  const [aggregatedResponse] = await Review.aggregate(
+    averageRatingPipeline(art._id)
+  );
+
+  const reviews = {};
+
+  if (aggregatedResponse) {
+    const { ratingAvg, reviewCount } = aggregatedResponse;
+    reviews.ratingAvg = parseFloat(ratingAvg).toFixed(1);
+    reviews.reviewCount = reviewCount;
+  }
+
+  const {
+    title,
+    storyLine,
+    cast,
+    writers,
+    director,
+    releseDate,
+    genres,
+    tags,
+    language,
+    poster,
+    trailer,
+    type,
+  } = art;
+
+  res.json({
+    art: {
+      idr,
+      title,
+      storyLine,
+      releseDate,
+      genres,
+      tags,
+      language,
+      type,
+      poster: poster?.url,
+      trailer: trailer?.url,
+      cast: cast.map((c) => ({
+        id: c._id,
+        profile: {
+          id: c.actor._id,
+          name: c.actor.name,
+          avatar: c.actor?.avatar?.url,
+        },
+        leadActor: c.leadActor,
+        roleAs: c.roleAs,
+      })),
+      writers: writers.map((w) => ({
+        id: w._id,
+        name: w.name,
+      })),
+      director: {
+        id: director._id,
+        name: director.name,
+      },
+      reviews: { ...reviews },
+    },
+  });
 };
 
 export const getArt = async (req, res) => {
   const { pageNo, limit } = req.query;
 
-  const artist = await Art.find({})
+  const art = await Art.find({})
     .sort({ createdAt: -1 })
     .skip(parseInt(pageNo) * parseInt(limit))
     .limit(parseInt(limit));
 
-  const profiles = artist.map((artist) => formatArtist(artist));
   res.json({
-    profiles,
+    art,
   });
 };
 

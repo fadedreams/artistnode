@@ -12,11 +12,13 @@ app.use(express.json());
 import userRouter from './router/user.js';
 import artistRouter from './router/artist.js';
 import artRouter from './router/art.js';
+import revRouter from './router/review.js';
 
 // Use the user routes in your app
 app.use("/api/user", userRouter);
 app.use("/api/artist", artistRouter);
 app.use("/api/art", artRouter);
+app.use("/api/rev", revRouter);
 
 // Other app configurations and middleware here
 
