@@ -3,13 +3,13 @@ import jwt from 'jsonwebtoken';
 import User from '../models/user.js'
 
 export const create = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, role } = req.body;
 
   const oldUser = await User.findOne({ email });
 
   if (oldUser) return res.status(400).json({ message: "User already exists!" });
 
-  const newUser = new User({ email, password });
+  const newUser = new User({ email, password, role });
   await newUser.save();
 
   res.status(201).json({
@@ -17,6 +17,7 @@ export const create = async (req, res) => {
       id: newUser._id,
       name: newUser.name,
       email: newUser.email,
+      role: newUser.role,
     },
   });
 };
