@@ -81,7 +81,7 @@ export const removeReview = async (req, res) => {
   res.json({ message: "Review removed successfully." });
 };
 
-export const getReviewsByMovie = async (req, res) => {
+export const getReviewsByArt = async (req, res) => {
   const { artId } = req.params;
 
   //if (!isValidObjectId(artId)) res.status(400).json({ message: "Invalid ID!" });

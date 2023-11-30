@@ -184,7 +184,7 @@ export const getLatestArt = async (req, res) => {
   res.json(art);
 };
 
-exports.getSingleArt = async (req, res) => {
+export const getSingleArt = async (req, res) => {
   const { idr } = req.params;
 
   // mongoose.Types.ObjectId(id)

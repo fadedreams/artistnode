@@ -1,12 +1,53 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-dotenv.config();
+import session from 'express-session';
+import Redis from 'ioredis';
+import connectRedis from 'connect-redis';
+import { createClient } from "redis"
+import RedisStore from "connect-redis"
 import db from './db/index.js';
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Initialize client.
+let redisClient = createClient()
+redisClient.connect().catch(console.error)
+
+// Initialize store.
+let redisStore = new RedisStore({
+  client: redisClient,
+  prefix: "myapp:",
+})
+// Initialize sesssion storage.
+app.use(
+  session({
+    store: redisStore,
+    resave: false, // required: force lightweight session keep alive (touch)
+    saveUninitialized: false, // recommended: only save session when data exists
+    secret: "keyboard cat",
+  })
+)
+// app.use(
+//   session({
+//     name: 'qid',
+//     store: redisStore,
+//     proxy: true,
+//     cookie: {
+//       maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+//       httpOnly: true,
+//       sameSite: 'lax', // csrf
+//       secure: false, // cookie only works in https
+//     },
+//     saveUninitialized: false,
+//     secret: 'secret',
+//     resave: false,
+//   })
+// );
 
 // Import the user routes
 import userRouter from './router/user.js';
@@ -26,4 +67,3 @@ const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
-

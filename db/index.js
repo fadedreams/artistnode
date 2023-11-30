@@ -17,7 +17,7 @@ mongoose
     console.error('Error connecting to the database:', error);
   });
 
-export default mongoose; // Export the Mongoose instance
+export default mongoose;
 
 
 

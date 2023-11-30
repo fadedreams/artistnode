@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const reviewSchema = mongoose.Schema({
   // owner parentMovie rating content
@@ -22,5 +22,9 @@ const reviewSchema = mongoose.Schema({
   },
 });
 
-module.exports = mongoose.model("Review", reviewSchema);
+const Review = mongoose.model("Review", reviewSchema);
 
+export default Review; // Default export
+
+// If you prefer named exports, you can do both:
+// export { Review, reviewSchema };

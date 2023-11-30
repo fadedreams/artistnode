@@ -32,6 +32,14 @@ services:
     networks:
       - my_network
 
+  redis:
+    image: "redis:latest"
+    command: ["redis-server", "--maxmemory", "1g"]
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+
 volumes:
   nodeapp1-data:
   mongo-data:

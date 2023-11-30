@@ -31,6 +31,21 @@ export const formatArtist = (actor) => {
 };
 
 
+export const getAverageRatings = async (movieId) => {
+  const [aggregatedResponse] = await Review.aggregate(
+    this.averageRatingPipeline(movieId)
+  );
+  const reviews = {};
+
+  if (aggregatedResponse) {
+    const { ratingAvg, reviewCount } = aggregatedResponse;
+    reviews.ratingAvg = parseFloat(ratingAvg).toFixed(1);
+    reviews.reviewCount = reviewCount;
+  }
+
+  return reviews;
+};
+
 // averageRatingPipeline.js
 export const averageRatingPipeline = (movieId) => [
   {

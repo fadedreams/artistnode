@@ -8,9 +8,11 @@ import { isAuth, isAdmin } from '../middlewares/auth.js';
 
 router.post("/:id", isAuth, validateRatings, validate, reviewCtrl.addReview);
 router.patch("/:id", isAuth, validateRatings, validate, reviewCtrl.updateReview);
-router.delete("/:id", isAuth, removeReview);
+router.delete("/:id", isAuth, reviewCtrl.removeReview);
 router.get("/:id", reviewCtrl.getReviewsByArt);
 
 export default router;
+
+
 
 
