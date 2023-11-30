@@ -1,0 +1,38 @@
+
+version: '3.8'
+
+networks:
+  my_network:
+    driver: bridge
+
+services:
+  nodeapp1:
+    build: .
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo-srv
+    volumes:
+      - nodeapp1-data:/app/data
+    env_file:
+      - ./.env
+    networks:
+      - my_network
+
+  mongo-srv:
+    image: mongo
+    environment:
+      MONGO_INITDB_DATABASE: tickets
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    env_file:
+      - ./.env
+    networks:
+      - my_network
+
+volumes:
+  nodeapp1-data:
+  mongo-data:
+

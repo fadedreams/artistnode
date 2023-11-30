@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const databaseUrl = 'mongodb://localhost/artistdb1'; // Replace with your actual database URL
+const databaseUrl = 'mongodb://mongo-srv:27017/artistdb1'; // Replace with your actual database URL
 const options = {
   useNewUrlParser: true,
   useUnifiedTopology: true,
