@@ -46,12 +46,12 @@ export const artistInfoValidator = [
     .withMessage('Artist name is missing!'),
 ];
 
-export const validateMovie = [
+export const validateArt = [
   check('title')
     .trim()
     .not()
     .isEmpty()
-    .withMessage('Movie title is missing!'),
+    .withMessage('Art title is missing!'),
   check('storyLine')
     .trim()
     .not()
@@ -65,7 +65,7 @@ export const validateMovie = [
   check('releseDate')
     .isDate()
     .withMessage('Release date is missing!'),
-  // Add the rest of the movie validation here
+  // Add the rest of the art validation here
 ];
 
 export const validateTrailer = check('trailer')

@@ -22,7 +22,7 @@ services:
   mongo-srv:
     image: mongo
     environment:
-      MONGO_INITDB_DATABASE: tickets
+      MONGO_INITDB_DATABASE: artistdb1
     ports:
       - "27017:27017"
     volumes:

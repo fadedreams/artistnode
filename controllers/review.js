@@ -19,7 +19,7 @@ export const addReview = async (req, res) => {
 
   const isAlreadyReviewed = await Review.findOne({
     owner: userId,
-    parentMovie: art._id,
+    parentArt: art._id,
   });
   if (isAlreadyReviewed)
     return res.status(400).json({ message: "You have already reviewed!" });
@@ -27,7 +27,7 @@ export const addReview = async (req, res) => {
   // create and update review.
   const newReview = new Review({
     owner: userId,
-    parentMovie: art._id,
+    parentArt: art._id,
     content,
     rating,
   });
@@ -71,7 +71,7 @@ export const removeReview = async (req, res) => {
   const review = await Review.findOne({ owner: userId, _id: reviewId });
   if (!review) return res.status(404).json({ message: "Review not found!" });
 
-  const art = await Art.findById(review.parentMovie).select("reviews");
+  const art = await Art.findById(review.parentArt).select("reviews");
   art.reviews = art.reviews.filter((rId) => rId.toString() !== reviewId);
 
   await Review.findByIdAndDelete(reviewId);

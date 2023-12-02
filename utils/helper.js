@@ -31,9 +31,9 @@ export const formatArtist = (actor) => {
 };
 
 
-export const getAverageRatings = async (movieId) => {
+export const getAverageRatings = async (artId) => {
   const [aggregatedResponse] = await Review.aggregate(
-    this.averageRatingPipeline(movieId)
+    this.averageRatingPipeline(artId)
   );
   const reviews = {};
 
@@ -47,7 +47,7 @@ export const getAverageRatings = async (movieId) => {
 };
 
 // averageRatingPipeline.js
-export const averageRatingPipeline = (movieId) => [
+export const averageRatingPipeline = (artId) => [
   {
     $lookup: {
       from: "Review",
@@ -57,7 +57,7 @@ export const averageRatingPipeline = (movieId) => [
     },
   },
   {
-    $match: { parentMovie: movieId },
+    $match: { parentArt: artId },
   },
   {
     $group: {
@@ -72,20 +72,20 @@ export const averageRatingPipeline = (movieId) => [
   },
 ];
 
-// relatedMovieAggregation.js
-export const relatedMovieAggregation = (tags, movieId) => [
+// relatedArtAggregation.js
+export const relatedArtAggregation = (tags, artId) => [
   {
     $lookup: {
-      from: "Movie",
+      from: "Art",
       localField: "tags",
       foreignField: "_id",
-      as: "relatedMovies",
+      as: "relatedArts",
     },
   },
   {
     $match: {
       tags: { $in: [...tags] },
-      _id: { $ne: movieId },
+      _id: { $ne: artId },
     },
   },
   {
@@ -100,7 +100,7 @@ export const relatedMovieAggregation = (tags, movieId) => [
   },
 ];
 
-export const topRatedMoviesPipeline = (type) => {
+export const topRatedArtsPipeline = (type) => {
   const matchOptions = {
     reviews: { $exists: true },
     status: { $eq: "public" },
@@ -111,7 +111,7 @@ export const topRatedMoviesPipeline = (type) => {
   return [
     {
       $lookup: {
-        from: "Movie",
+        from: "Art",
         localField: "reviews",
         foreignField: "_id",
         as: "topRated",

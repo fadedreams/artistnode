@@ -1,15 +1,15 @@
 import mongoose from 'mongoose';
 
 const reviewSchema = mongoose.Schema({
-  // owner parentMovie rating content
+  // owner parentArt rating content
   owner: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
-  parentMovie: {
+  parentArt: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Movie",
+    ref: "Art",
     required: true,
   },
   content: {

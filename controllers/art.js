@@ -93,7 +93,7 @@ export const createArt = async (req, res) => {
         finalPoster.responsive.push(secure_url);
       }
     }
-    newMovie.poster = finalPoster;
+    newArt.poster = finalPoster;
   }
 
   try {
