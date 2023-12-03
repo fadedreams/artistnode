@@ -24,6 +24,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use(metricsMiddleware);
+app.get('/metrics', metricsMiddleware.metricsMiddleware);
 
 // Initialize client.
 let redisClient = createClient()
