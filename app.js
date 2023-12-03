@@ -8,11 +8,22 @@ import { createClient } from "redis"
 import RedisStore from "connect-redis"
 import db from './db/index.js';
 
+import * as WinstonLogger from './winston-logger.cjs';
+import promBundle from 'express-prom-bundle';
+
+const metricsMiddleware = promBundle({
+  includeMethod: true,
+  includePath: true,
+});
+
+
 dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+app.use(metricsMiddleware);
 
 // Initialize client.
 let redisClient = createClient()
@@ -23,6 +34,7 @@ let redisStore = new RedisStore({
   client: redisClient,
   prefix: "myapp:",
 })
+
 // Initialize sesssion storage.
 app.use(
   session({
@@ -30,6 +42,12 @@ app.use(
     resave: false, // required: force lightweight session keep alive (touch)
     saveUninitialized: false, // recommended: only save session when data exists
     secret: "secret",
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+      httpOnly: true,
+      sameSite: 'lax', // csrf
+      secure: false, // cookie only works in https
+    },
   })
 )
 // app.use(

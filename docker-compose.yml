@@ -6,6 +6,7 @@ networks:
     driver: bridge
 
 services:
+
   nodeapp1:
     build: .
     ports:

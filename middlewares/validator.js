@@ -89,9 +89,9 @@ export const validate = (req, res, next) => {
 };
 
 
-export const validateArt = [
-  check("title").trim().not().isEmpty().withMessage("Art title is missing!"),
-  check("releaseDate").isDate().withMessage("Release date is missing!"),
-];
+// export const validateArt = [
+//   check("title").trim().not().isEmpty().withMessage("Art title is missing!"),
+//   check("releaseDate").isDate().withMessage("Release date is missing!"),
+// ];
 
 
