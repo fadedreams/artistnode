@@ -14,7 +14,7 @@ import {
     validate,
     signInValidator,
 } from '@src/middlewares/validator'; // Import your controllers with ES6 syntax
-import { isAuth } from '../middlewares/auth';
+import { isAuth } from '@src/middlewares/auth';
 router.post('/create', userValidator, validate, create);
 router.post('/signin', signInValidator, validate, signIn);
 
