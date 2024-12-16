@@ -24,7 +24,7 @@ export const create = async (req: Request, res: Response) => {
 export const signIn = async (req: Request, res: Response) => {
 
     const signInData: SignInDTO = req.body;
-    console.log("signIn  ", signInData)
+    console.log("signIn controllers ", signInData)
     try {
         const user = await userUseCase.signInUser(signInData);
         res.status(200).json(user);

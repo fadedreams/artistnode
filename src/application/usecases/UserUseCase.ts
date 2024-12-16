@@ -16,6 +16,8 @@ export class UserUseCase {
 
     async signInUser(signInData: SignInDTO): Promise<any> {
         // Sign in logic, like verifying password, etc.
+        console.log("signIn UserUseCase ", signInData)
+
         const user = await this.userRepository.signIn(signInData);
         return user;
     }
