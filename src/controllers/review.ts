@@ -1,8 +1,8 @@
 
 import { isValidObjectId } from "mongoose";
-import Art from "../models/art.js";
-import Review from "../models/review";
-import { getAverageRatings } from "../utils/helper";
+import Art from "@src/models/art.js";
+import Review from "@src/models/review";
+import { getAverageRatings } from "@src/utils/helper";
 
 export const addReview = async (req, res) => {
     const { artId } = req.params;

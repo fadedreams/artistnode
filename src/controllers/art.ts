@@ -1,7 +1,7 @@
 
-import Art from '../models/art'
-import Review from '../models/review'
-import cloudinary from "../cloud/index"
+import Art from '@src/models/art'
+import Review from '@src/models/review'
+import cloudinary from "@src/cloud/index"
 import { uploadImageToCloud, averageRatingPipeline } from "../utils/helper"
 
 //export const createArtPrev1 = async (req, res) => {

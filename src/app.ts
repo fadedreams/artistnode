@@ -6,13 +6,12 @@ import Redis from 'ioredis';
 import connectRedis from 'connect-redis';
 import { createClient } from "redis"
 import RedisStore from "connect-redis"
-// import db from './db/index';
-import './db/index';  // Import the db connection file
+import '@src/db/index';  // Import the db connection file
 
 
 import promBundle from 'express-prom-bundle';
 
-import { WinstonLogger } from './winston-logger.cjs'; // Adjust the path as necessary
+import { WinstonLogger } from '@src/winston-logger.cjs'; // Adjust the path as necessary
 const logger = new WinstonLogger().getLogger();
 // Log a message at the info level
 // logger.info('App is starting');

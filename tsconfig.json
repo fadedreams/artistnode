@@ -9,15 +9,24 @@
         "noEmit": false,
         "esModuleInterop": true,
         "skipLibCheck": true,
+        "declaration": true,
+        "rootDir": "./",
+        "moduleResolution": "node",
         "baseUrl": "./",
-        "paths": {
-            "@msg/*": [
+        "paths": { // https://github.com/LeDDGroup/typescript-transform-paths
+            "@src/*": [
                 "src/*"
             ]
         },
-        "declaration": true,
-        "rootDir": "./",
-        "moduleResolution": "node"
+        "plugins": [
+            {
+                "transform": "typescript-transform-paths"
+            },
+            {
+                "transform": "typescript-transform-paths",
+                "afterDeclarations": true
+            }
+        ]
     },
     "include": [
         "src/**/*"

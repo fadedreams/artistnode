@@ -7,13 +7,13 @@ import {
     //verifyEmail,
     //resendEmailVerificationToken,
     //forgetPassword,
-} from '../controllers/user';
+} from '@src/controllers/user';
 
 import {
     userValidator,
     validate,
     signInValidator,
-} from '../middlewares/validator'; // Import your controllers with ES6 syntax
+} from '@src/middlewares/validator'; // Import your controllers with ES6 syntax
 import { isAuth } from '../middlewares/auth';
 router.post('/create', userValidator, validate, create);
 router.post('/signin', signInValidator, validate, signIn);

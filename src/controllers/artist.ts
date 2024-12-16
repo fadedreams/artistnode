@@ -1,6 +1,6 @@
 
-import Artist from '../models/artist'
-import cloudinary from "../cloud/index"
+import Artist from '@src/models/artist'
+import cloudinary from "@src/cloud/index"
 import { uploadImageToCloud, formatArtist } from "../utils/helper"
 
 export const createArtist = async (req, res) => {

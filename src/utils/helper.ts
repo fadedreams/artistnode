@@ -1,6 +1,6 @@
 import crypto from "crypto";
-import cloudinary from "../cloud/index";
-import Review from "../models/review";
+import cloudinary from "@src/cloud/index";
+import Review from "@src/models/review";
 
 export const sendError = (res, error, statusCode = 401) =>
     res.status(statusCode).json({ error });

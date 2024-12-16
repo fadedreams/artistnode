@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import { artcats } from "../utils/artcats";
+import { artcats } from "@src/utils/artcats";
 const artSchema = new mongoose.Schema(
     {
         title: {
