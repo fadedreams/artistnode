@@ -77,10 +77,10 @@ app.use(
 // );
 
 // Import the user routes
-import userRouter from './router/user.js';
-import artistRouter from './router/artist.js';
-import artRouter from './router/art.js';
-import revRouter from './router/review.js';
+import userRouter from './router/user';
+import artistRouter from './router/artist';
+import artRouter from './router/art';
+import revRouter from './router/review';
 
 // Use the user routes in your app
 app.use("/api/user", userRouter);

@@ -1,10 +1,10 @@
 
 import express from 'express';
 const router = express.Router();
-import * as reviewCtrl from '../controllers/review.js';
-import { validateRatings, validate } from '../middlewares/validator.js';
-import { uploadImage } from '../middlewares/multer.js';
-import { isAuth, isAdmin } from '../middlewares/auth.js';
+import * as reviewCtrl from '../controllers/review';
+import { validateRatings, validate } from '../middlewares/validator';
+import { uploadImage } from '../middlewares/multer';
+import { isAuth, isAdmin } from '../middlewares/auth';
 
 router.post("/:id", isAuth, validateRatings, validate, reviewCtrl.addReview);
 router.patch("/:id", isAuth, validateRatings, validate, reviewCtrl.updateReview);

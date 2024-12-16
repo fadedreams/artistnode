@@ -1,6 +1,6 @@
 
 import jwt from 'jsonwebtoken';
-import User from '../models/user.js'
+import User from '../models/user'
 
 export const create = async (req, res) => {
     const { email, password, role } = req.body;

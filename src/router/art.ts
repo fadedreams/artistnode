@@ -1,9 +1,9 @@
 import express from 'express';
 const router = express.Router();
-import * as artCtrl from '../controllers/art.js';
-import { artistInfoValidator, validate } from '../middlewares/validator.js';
-import { uploadImage, uploadVideo } from '../middlewares/multer.js';
-import { isAuth, isAdmin } from '../middlewares/auth.js';
+import * as artCtrl from '../controllers/art';
+import { artistInfoValidator, validate } from '../middlewares/validator';
+import { uploadImage, uploadVideo } from '../middlewares/multer';
+import { isAuth, isAdmin } from '../middlewares/auth';
 
 //router.post('/create', isAuth, isAdmin, uploadImage.single('avatar'), artistInfoValidator, validate, artistCtrl.createArtist);
 router.post('/uploadartprev', uploadImage.single('image'), artCtrl.createArtPrev);
