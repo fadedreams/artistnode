@@ -5,9 +5,9 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "dev": "npx tsx -r tsconfig-paths/register app.ts",
-        "dev2": "npx ts-node app.ts",
-        "dev3": "nodemon app.ts",
+        "dev": "npx tsx -r tsconfig-paths/register src/app.ts",
+        "dev2": "npx ts-node src/app.ts",
+        "dev3": "nodemon src/app.ts",
         "test": "echo \"Error: no test specified\" && exit 1",
         "build": "tsc",
         "start": "node dist/index.js"
