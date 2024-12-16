@@ -1,0 +1,28 @@
+{
+    "compilerOptions": {
+        "target": "ES6",
+        "module": "CommonJS",
+        "outDir": "./dist",
+        "strict": true,
+        "allowJs": true,
+        "checkJs": false,
+        "noEmit": false,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "baseUrl": "./",
+        "paths": {
+            "@msg/*": [
+                "src/*"
+            ]
+        },
+        "declaration": true,
+        "rootDir": "./",
+        "moduleResolution": "node"
+    },
+    "include": [
+        "src/**/*"
+    ],
+    "exclude": [
+        "node_modules"
+    ]
+}
