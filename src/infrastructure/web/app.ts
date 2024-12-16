@@ -8,6 +8,8 @@ import promBundle from 'express-prom-bundle';
 import { Database as DatabaseInterface } from '@src/domain/interfaces/Database';
 import { createClient } from 'redis';
 
+import userRouter from '@src/infrastructure/web/routers/user';  // Import the user router
+
 dotenv.config();
 
 const metricsMiddleware = promBundle({
@@ -26,6 +28,7 @@ export default class App {
         this.database = database; // Inject the database here
 
         this.initializeMiddlewares();
+        this.initializeRoutes();
     }
 
     private initializeMiddlewares() {
@@ -58,6 +61,10 @@ export default class App {
                 },
             })
         );
+    }
+
+    private initializeRoutes() {
+        this.app.use('/api/user', userRouter);  // Add the user router under the '/api/user' path
     }
 
     public async start() {
