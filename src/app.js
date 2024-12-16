@@ -12,8 +12,8 @@ import * as WinstonLogger from './winston-logger.cjs';
 import promBundle from 'express-prom-bundle';
 
 const metricsMiddleware = promBundle({
-  includeMethod: true,
-  includePath: true,
+    includeMethod: true,
+    includePath: true,
 });
 
 
@@ -32,24 +32,24 @@ redisClient.connect().catch(console.error)
 
 // Initialize store.
 let redisStore = new RedisStore({
-  client: redisClient,
-  prefix: "myapp:",
+    client: redisClient,
+    prefix: "myapp:",
 })
 
 // Initialize sesssion storage.
 app.use(
-  session({
-    store: redisStore,
-    resave: false, // required: force lightweight session keep alive (touch)
-    saveUninitialized: false, // recommended: only save session when data exists
-    secret: "secret",
-    cookie: {
-      maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
-      httpOnly: true,
-      sameSite: 'lax', // csrf
-      secure: false, // cookie only works in https
-    },
-  })
+    session({
+        store: redisStore,
+        resave: false, // required: force lightweight session keep alive (touch)
+        saveUninitialized: false, // recommended: only save session when data exists
+        secret: "secret",
+        cookie: {
+            maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
+            httpOnly: true,
+            sameSite: 'lax', // csrf
+            secure: false, // cookie only works in https
+        },
+    })
 )
 // app.use(
 //   session({
@@ -84,5 +84,5 @@ app.use("/api/rev", revRouter);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => {
-  console.log(`Server is running on port ${port}`);
+    console.log(`Server is running on port ${port}`);
 });

@@ -6,11 +6,13 @@ import Redis from 'ioredis';
 import connectRedis from 'connect-redis';
 import { createClient } from "redis"
 import RedisStore from "connect-redis"
-import db from './db/index.js';
+// import db from './db/index';
+import './db/index.ts';  // Import the db connection file
 
-import * as WinstonLogger from './winston-logger.cjs';
+
 import promBundle from 'express-prom-bundle';
 
+import * as WinstonLogger from './winston-logger.cjs';
 const metricsMiddleware = promBundle({
     includeMethod: true,
     includePath: true,
