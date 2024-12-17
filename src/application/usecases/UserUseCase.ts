@@ -2,9 +2,11 @@ import { IUserRepository } from '@src/domain/repositories/user';
 import { UserDTO, SignInDTO } from '@src/domain/entities/user';
 
 export class UserUseCase {
-    private userRepository: IUserRepository;
+    // private userRepository: IUserRepository;
+    private userRepository;
 
-    constructor(userRepository: IUserRepository) {
+    // constructor(userRepository: IUserRepository) {
+    constructor(userRepository: any) {
         this.userRepository = userRepository;
     }
 
