@@ -67,9 +67,9 @@ export default class App {
     }
 
     private initializeRoutes() {
-        this.app.use('/api/user', userRouter);
+        // this.app.use('/api/user', userRouter);
         this.app.use('/api/artist', artistRouter(this.logger));
-        // this.app.use('/api/user', userRouter(this.logger));
+        this.app.use('/api/user', userRouter(this.logger));
         this.logger.info('Routes initialized');
     }
 
