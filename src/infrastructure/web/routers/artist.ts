@@ -1,31 +1,28 @@
-import express from 'express';
-import { create, signIn } from '@src/infrastructure/web/controllers/user';
-import { createArtist, updateArtist, removeArtist, searchArtist, getLatestArtist, getSingleArtist, getActors } from '@src/infrastructure/web/controllers/artist';
-import { userValidator, validate, artistInfoValidator } from '@src/infrastructure/web/middlewares/validator';
-import { isAuth, isAdmin } from '@src/infrastructure/web/middlewares/auth';
+import { Router } from 'express';
+import ArtistController from '@src/infrastructure/web/controllers/artist';
+import { Logger } from 'winston';
+import { isAuth, isAdmin } from '@src/infrastructure/web/middlewares/auth'; // Adjust the path to your middlewares
+import { artistInfoValidator, validate } from '@src/infrastructure/web/middlewares/validator'; // Adjust path to validator
 
-const router = express.Router();
+// Create a function that takes the logger and sets up the routes
+const artistRouter = (logger: Logger) => {
+    // Instantiate the controller with the logger
+    const artistController = new ArtistController(logger);
 
-// Create Artist
-router.post('/create', isAuth, isAdmin, artistInfoValidator, validate, createArtist);
+    // Create the router instance
+    const router = Router();
 
-// Update Artist
-router.put('/update/:id', isAuth, isAdmin, validate, updateArtist);
+    // Artist Routes with Middleware
+    router.post('/artists', isAuth, isAdmin, artistInfoValidator, validate, artistController.createArtist); // Create artist (requires auth, admin, and validation)
+    router.put('/artists/:id', isAuth, isAdmin, artistController.updateArtist); // Update artist (requires auth & admin)
+    router.delete('/artists/:id', isAuth, isAdmin, artistController.removeArtist); // Remove artist (requires auth & admin)
+    router.get('/artists/search', isAuth, artistController.searchArtist); // Search artists (requires auth)
+    router.get('/artists/latest', isAuth, artistController.getLatestArtist); // Get latest artists (requires auth)
+    router.get('/artists/:id', isAuth, artistController.getSingleArtist); // Get a single artist by ID (requires auth)
+    router.get('/artists/actors', isAuth, artistController.getActors); // Get actors (requires auth)
 
-// Remove Artist
-router.delete('/remove/:id', isAuth, isAdmin, removeArtist);
+    return router;
+};
 
-// Search Artists
-router.get('/search', isAuth, isAdmin, validate, searchArtist);
-
-// Get Latest Artists
-router.get('/latest', isAuth, isAdmin, getLatestArtist);
-
-// Get Single Artist
-router.get('/:id', isAuth, isAdmin, getSingleArtist);
-
-// Get Actors (specific role filter)
-router.get('/actors', isAuth, isAdmin, getActors);
-
-export default router;
+export default artistRouter;
 

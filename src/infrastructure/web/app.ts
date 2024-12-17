@@ -8,9 +8,9 @@ import promBundle from 'express-prom-bundle';
 import { Database as DatabaseInterface } from '@src/domain/interfaces/Database';
 import { createClient } from 'redis';
 
-import userRouter from '@src/infrastructure/web/routers/user';  // Import the user router
-import artistRouter from '@src/infrastructure/web/routers/artist';  // Import the user router
-
+import userRouter from '@src/infrastructure/web/routers/user';
+import artistRouter from '@src/infrastructure/web/routers/artist';
+import { Logger } from 'winston';
 
 const metricsMiddleware = promBundle({
     includeMethod: true,
@@ -21,11 +21,13 @@ export default class App {
     private app: Application;
     private port: number;
     private database: DatabaseInterface;
+    private logger: Logger;
 
-    constructor(database: DatabaseInterface) {
+    constructor(database: DatabaseInterface, logger: Logger) {
         this.app = express();
         this.port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-        this.database = database; // Inject the database here
+        this.database = database;
+        this.logger = logger;
 
         this.initializeMiddlewares();
         this.initializeRoutes();
@@ -39,14 +41,13 @@ export default class App {
 
         // Initialize Redis client and store
         const redisClient = createClient();
-        redisClient.connect().catch(console.error);
+        redisClient.connect().catch((err) => this.logger.error('Redis connection error', err));
 
         const redisStore = new RedisStore({
             client: redisClient,
             prefix: 'myapp:',
         });
 
-        // Initialize session storage
         this.app.use(
             session({
                 store: redisStore,
@@ -61,24 +62,28 @@ export default class App {
                 },
             })
         );
+
+        this.logger.info('Middlewares initialized');
     }
 
     private initializeRoutes() {
-        this.app.use('/api/artist', artistRouter);  // Add the user router under the '/api/user' path
-        this.app.use('/api/user', userRouter);  // Add the user router under the '/api/user' path
+        this.app.use('/api/user', userRouter);
+        this.app.use('/api/artist', artistRouter(this.logger));
+        // this.app.use('/api/user', userRouter(this.logger));
+        this.logger.info('Routes initialized');
     }
 
     public async start() {
         dotenv.config();
         try {
-            // Ensure the database connection is established before starting the app
             await this.database.connect();
+            this.logger.info('Database connected successfully');
 
             this.app.listen(this.port, () => {
-                console.log(`Server is running on port ${this.port}`);
+                this.logger.info(`Server is running on port ${this.port}`);
             });
         } catch (error) {
-            console.error('Failed to connect to the database:', error);
+            this.logger.error('Failed to connect to the database:', error);
         }
     }
 }
