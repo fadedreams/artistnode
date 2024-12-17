@@ -9,26 +9,23 @@ export class UserController {
     private logger: Logger;
 
     constructor(logger: Logger) {
-        const userRepository = new UserRepository();
-        this.userUseCase = new UserUseCase(userRepository);
         this.logger = logger;
+
+        // Initialize repository and use case with logger
+        const userRepository = new UserRepository(this.logger);
+        this.userUseCase = new UserUseCase(userRepository, this.logger);
     }
 
     public create = async (req: Request, res: Response) => {
         const userData: UserDTO = req.body;
 
         try {
-            this.logger.info('Creating a new user', { data: userData });
+            this.logger.info('UserController: Received request to create user', { email: userData.email });
             const user = await this.userUseCase.createUser(userData);
             res.status(201).json(user);
         } catch (error: unknown) {
-            this.logger.error('Error creating user', { error });
-
-            if (error instanceof Error) {
-                res.status(400).json({ error: error.message });
-            } else {
-                res.status(400).json({ error: 'An unknown error occurred' });
-            }
+            this.logger.error('UserController: Error creating user', { error });
+            res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
         }
     };
 
@@ -36,17 +33,12 @@ export class UserController {
         const signInData: SignInDTO = req.body;
 
         try {
-            this.logger.info('User sign-in attempt', { data: signInData });
+            this.logger.info('UserController: Received request to sign in user', { email: signInData.email });
             const user = await this.userUseCase.signInUser(signInData);
             res.status(200).json(user);
         } catch (error: unknown) {
-            this.logger.error('Error signing in user', { error });
-
-            if (error instanceof Error) {
-                res.status(400).json({ error: error.message });
-            } else {
-                res.status(400).json({ error: 'An unknown error occurred' });
-            }
+            this.logger.error('UserController: Error signing in user', { error });
+            res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
         }
     };
 }
