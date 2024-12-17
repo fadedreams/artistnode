@@ -9,7 +9,18 @@ export class ArtistUseCase {
     }
 
     async createArtist(artistData: CreateArtistDTO) {
-        return await this.artistRepository.createArtist(artistData);
+        try {
+            const artist = await this.artistRepository.createArtist(artistData);
+            return { success: true, artist }; // Wrap the response in a success object
+        } catch (error: unknown) {
+            // Narrowing the type of error to handle it safely
+            if (error instanceof Error) {
+                return { error: error.message }; // Return error message if it's an instance of Error
+            } else {
+                // If it's not an instance of Error, handle it safely
+                return { error: 'An unknown error occurred' };
+            }
+        }
     }
 
     async updateArtist(artistId: string, artistData: UpdateArtistDTO) {

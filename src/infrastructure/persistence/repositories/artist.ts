@@ -3,12 +3,12 @@ import { CreateArtistDTO, UpdateArtistDTO, SearchArtistDTO } from '@src/domain/e
 
 export class ArtistRepository {
     // Create Artist
-    async createArtist(userData: CreateArtistDTO) {
-        const existingArtist = await ArtistModel.findOne({ name: userData.name });
+    async createArtist(artistData: CreateArtistDTO) {
+        const existingArtist = await ArtistModel.findOne({ name: artistData.name });
         if (existingArtist) {
             return { error: 'Artist already exists!' };
         }
-        const artist = new ArtistModel(userData);
+        const artist = new ArtistModel(artistData);
         await artist.save();
         return artist;
     }
@@ -26,6 +26,7 @@ export class ArtistRepository {
             return null;  // Return null in case of error
         }
     }
+
     // Remove Artist
     async removeArtist(artistId: string) {
         const result = await ArtistModel.findByIdAndDelete(artistId);

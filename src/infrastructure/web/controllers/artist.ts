@@ -13,7 +13,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Create Artist
-export const createArtist = async (req: Request, res: Response) => {
+export const createArtist = async (req: Request, res: Response): Promise<void> => {
     try {
         upload.single('file')(req, res, async (err: any) => {
             if (err) {
@@ -51,7 +51,7 @@ export const createArtist = async (req: Request, res: Response) => {
 };
 
 // Update Artist
-export const updateArtist = async (req: Request, res: Response) => {
+export const updateArtist = async (req: Request, res: Response): Promise<void> => {
     try {
         const artistId = req.params.id;
         const artistData: UpdateArtistDTO = req.body;
@@ -67,7 +67,7 @@ export const updateArtist = async (req: Request, res: Response) => {
 };
 
 // Remove Artist
-export const removeArtist = async (req: Request, res: Response) => {
+export const removeArtist = async (req: Request, res: Response): Promise<void> => {
     try {
         const artistId = req.params.id;
         const result = await artistUseCase.removeArtist(artistId);
@@ -81,7 +81,7 @@ export const removeArtist = async (req: Request, res: Response) => {
 };
 
 // Search Artists
-export const searchArtist = async (req: Request, res: Response) => {
+export const searchArtist = async (req: Request, res: Response): Promise<void> => {
     try {
         const query: SearchArtistDTO = req.query;
         const artists = await artistUseCase.searchArtist(query);
@@ -92,7 +92,7 @@ export const searchArtist = async (req: Request, res: Response) => {
 };
 
 // Get Latest Artists
-export const getLatestArtist = async (req: Request, res: Response) => {
+export const getLatestArtist = async (req: Request, res: Response): Promise<void> => {
     try {
         const latestArtists = await artistUseCase.getLatestArtist();
         res.status(200).json(latestArtists);
@@ -102,7 +102,7 @@ export const getLatestArtist = async (req: Request, res: Response) => {
 };
 
 // Get Single Artist
-export const getSingleArtist = async (req: Request, res: Response) => {
+export const getSingleArtist = async (req: Request, res: Response): Promise<void> => {
     try {
         const artistId = req.params.id;
         const artist = await artistUseCase.getSingleArtist(artistId);
@@ -113,7 +113,7 @@ export const getSingleArtist = async (req: Request, res: Response) => {
 };
 
 // Get Actors
-export const getActors = async (req: Request, res: Response) => {
+export const getActors = async (req: Request, res: Response): Promise<void> => {
     try {
         const actors = await artistUseCase.getActors();
         res.status(200).json(actors);
