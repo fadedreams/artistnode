@@ -1,8 +1,9 @@
-import ArtistModel from '@src/infrastructure/persistence/models/artistModel'; // Assuming Mongoose model is imported
+import ArtistModel from '@src/infrastructure/persistence/models/artistModel';
+import { CreateArtistDTO, UpdateArtistDTO, SearchArtistDTO } from '@src/domain/entities/artist';
 
 export class ArtistRepository {
     // Create Artist
-    async createArtist(userData: any) {
+    async createArtist(userData: CreateArtistDTO) {
         const existingArtist = await ArtistModel.findOne({ name: userData.name });
         if (existingArtist) {
             return { error: 'Artist already exists!' };
@@ -13,14 +14,18 @@ export class ArtistRepository {
     }
 
     // Update Artist
-    async updateArtist(artistId: string, artistData: any) {
-        const artist = await ArtistModel.findByIdAndUpdate(artistId, artistData, { new: true });
-        if (!artist) {
-            return { error: 'Artist not found' };
+    async updateArtist(artistId: string, artistData: UpdateArtistDTO) {
+        try {
+            const artist = await ArtistModel.findByIdAndUpdate(artistId, artistData, { new: true });
+            if (!artist) {
+                return null;  // Return null if artist is not found
+            }
+            return artist;
+        } catch (error) {
+            console.error("Error updating artist:", error);
+            return null;  // Return null in case of error
         }
-        return artist;
     }
-
     // Remove Artist
     async removeArtist(artistId: string) {
         const result = await ArtistModel.findByIdAndDelete(artistId);
@@ -30,12 +35,17 @@ export class ArtistRepository {
         return { message: 'Artist removed successfully' };
     }
 
-    // Search Artists by Name
-    async searchArtist(name: string) {
-        return await ArtistModel.find({ name: new RegExp(name, 'i') });
+    // Search Artists by Name or other criteria
+    async searchArtist(query: SearchArtistDTO) {
+        const { name, gender, about } = query;
+        return await ArtistModel.find({
+            ...(name && { name: new RegExp(name, 'i') }),
+            ...(gender && { gender }),
+            ...(about && { about: new RegExp(about, 'i') }),
+        });
     }
 
-    // Get Latest Artists (Assume latest is determined by the creation date)
+    // Get Latest Artists
     async getLatestArtist() {
         return await ArtistModel.find().sort({ createdAt: -1 }).limit(10); // Adjust limit as needed
     }
@@ -45,9 +55,9 @@ export class ArtistRepository {
         return await ArtistModel.findById(artistId);
     }
 
-    // Get Actors (Adjust according to your logic)
+    // Get Actors
     async getActors() {
-        return await ArtistModel.find({ role: 'actor' }); // Adjust the query as needed
+        return await ArtistModel.find({ role: 'actor' }); // Assuming 'role' is a field in the Artist model
     }
 }
 

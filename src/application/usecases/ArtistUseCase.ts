@@ -1,4 +1,4 @@
-import { CreateArtistDTO } from '@src/domain/entities/artist';
+import { CreateArtistDTO, UpdateArtistDTO, SearchArtistDTO } from '@src/domain/entities/artist';
 import { ArtistRepository } from '@src/infrastructure/persistence/repositories/artist';
 
 export class ArtistUseCase {
@@ -12,7 +12,7 @@ export class ArtistUseCase {
         return await this.artistRepository.createArtist(artistData);
     }
 
-    async updateArtist(artistId: string, artistData: CreateArtistDTO) {
+    async updateArtist(artistId: string, artistData: UpdateArtistDTO) {
         return await this.artistRepository.updateArtist(artistId, artistData);
     }
 
@@ -20,8 +20,8 @@ export class ArtistUseCase {
         return await this.artistRepository.removeArtist(artistId);
     }
 
-    async searchArtist(name: string) {
-        return await this.artistRepository.searchArtist(name);
+    async searchArtist(query: SearchArtistDTO) {
+        return await this.artistRepository.searchArtist(query);
     }
 
     async getLatestArtist() {

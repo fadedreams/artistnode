@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
-import minioClient from '@src/infrastructure/persistence/minioClient'; // Adjust the import path as needed
-import { CreateArtistDTO } from '@src/domain/entities/artist';
+import minioClient from '@src/infrastructure/persistence/minioClient';
+import { CreateArtistDTO, UpdateArtistDTO, SearchArtistDTO } from '@src/domain/entities/artist';
 import { ArtistUseCase } from '@src/application/usecases/ArtistUseCase';
 import { ArtistRepository } from '@src/infrastructure/persistence/repositories/artist';
 
@@ -9,7 +9,7 @@ const artistRepository = new ArtistRepository();
 const artistUseCase = new ArtistUseCase(artistRepository);
 
 // Set up multer for file upload handling
-const storage = multer.memoryStorage(); // Store file in memory temporarily
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 // Create Artist
@@ -54,7 +54,7 @@ export const createArtist = async (req: Request, res: Response) => {
 export const updateArtist = async (req: Request, res: Response) => {
     try {
         const artistId = req.params.id;
-        const artistData: CreateArtistDTO = req.body;
+        const artistData: UpdateArtistDTO = req.body;
 
         const updatedArtist = await artistUseCase.updateArtist(artistId, artistData);
         if (updatedArtist.error) {
@@ -83,7 +83,7 @@ export const removeArtist = async (req: Request, res: Response) => {
 // Search Artists
 export const searchArtist = async (req: Request, res: Response) => {
     try {
-        const query = req.query.name as string;
+        const query: SearchArtistDTO = req.query;
         const artists = await artistUseCase.searchArtist(query);
         res.status(200).json(artists);
     } catch (error) {
@@ -112,7 +112,7 @@ export const getSingleArtist = async (req: Request, res: Response) => {
     }
 };
 
-// Get Actors (Assuming you want to fetch related or featured artists, adjust accordingly)
+// Get Actors
 export const getActors = async (req: Request, res: Response) => {
     try {
         const actors = await artistUseCase.getActors();
