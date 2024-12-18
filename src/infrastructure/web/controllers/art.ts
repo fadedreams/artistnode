@@ -161,7 +161,8 @@ export default class ArtController {
 
             if (!art) {
                 this.logger.error('Error removing art: No art found', { id });
-                return res.status(404).json({ message: 'Art not found' });
+                // return res.status(404).json({ message: 'Art not found' });
+                return
             }
 
             this.logger.info('Art removed successfully', { id });
@@ -176,8 +177,10 @@ export default class ArtController {
     searchArt = async (req: Request, res: Response): Promise<void> => {
         try {
             const { name } = req.query;
-            if (!name.trim()) return res.json({ results: [] });
-
+            if (name && name.toString().trim()) {
+                this.logger.error('searchArt: !null');
+                return;
+            }
             const result = await this.artUseCase.searchArt(name);
             this.logger.info('Art search performed', { name });
             res.status(200).json({ art: result });
@@ -186,7 +189,6 @@ export default class ArtController {
             res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
-
     // Get Latest Art
     getLatestArt = async (req: Request, res: Response): Promise<void> => {
         try {
@@ -207,7 +209,8 @@ export default class ArtController {
 
             if (!art) {
                 this.logger.error('Art not found', { id });
-                return res.status(404).json({ message: 'Art not found' });
+                // return res.status(404).json({ message: 'Art not found' });
+                return
             }
 
             this.logger.info('Art details fetched', { id });
@@ -221,7 +224,14 @@ export default class ArtController {
     // Get Art
     getArt = async (req: Request, res: Response): Promise<void> => {
         try {
-            const { pageNo, limit } = req.query;
+            const pageNo = Number(req.query.pageNo);
+            const limit = Number(req.query.limit);
+
+            if (isNaN(pageNo) || isNaN(limit)) {
+                res.status(400).json({ error: 'Invalid pageNo or limit value' });
+                return;
+            }
+
             const result = await this.artUseCase.getArt(pageNo, limit);
 
             this.logger.info('Fetched paginated art');
