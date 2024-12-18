@@ -15,6 +15,8 @@ import { createClient } from 'redis';
 import userRouter from '@src/infrastructure/web/routers/user';
 import artistRouter from '@src/infrastructure/web/routers/artist';
 import artRouter from '@src/infrastructure/web/routers/art';
+import reviewRouter from '@src/infrastructure/web/routers/review';
+
 import { Logger } from 'winston';
 
 const metricsMiddleware = promBundle({
@@ -76,6 +78,8 @@ export default class App {
         this.app.use('/api/artist', artistRouter(this.logger));
         this.app.use('/api/art', artRouter(this.logger));
         this.app.use('/api/user', userRouter(this.logger));
+        this.app.use('/api/user', reviewRouter(this.logger));
+
         this.logger.info('Routes initialized');
     }
 
