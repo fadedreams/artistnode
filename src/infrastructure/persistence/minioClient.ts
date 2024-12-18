@@ -15,10 +15,8 @@ const minioClient = new Client({
     endPoint: 'localhost',
     port: 9000,
     useSSL: false,
-    // accessKey: minioUser,
-    accessKey: 'admin',
-    // secretKey: minioPass,
-    secretKey: 'admin12345',
+    accessKey: minioUser,
+    secretKey: minioPass,
 });
 
 export default minioClient;

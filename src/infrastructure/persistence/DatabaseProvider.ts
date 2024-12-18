@@ -1,3 +1,4 @@
+
 import mongoose from 'mongoose';
 import { Database as DatabaseInterface } from '@src/domain/interfaces/Database';
 
@@ -24,10 +25,10 @@ class DatabaseProvider implements DatabaseInterface {
     }
 }
 
-// Static method to create the Database instance
 export default class DatabaseProviderFactory {
     static createInstance(): DatabaseProvider {
-        const databaseUrl = 'mongodb://localhost:27017/artistdb1'; // Use your DB URL here
+        // const databaseUrl = 'mongodb://localhost:27017/artistdb1';
+        const databaseUrl = process.env.DB_URI;
         return new DatabaseProvider(databaseUrl);
     }
 }

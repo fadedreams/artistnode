@@ -1,6 +1,10 @@
+// Load environment variables
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express, { Application } from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
+
 import session from 'express-session';
 import RedisStore from 'connect-redis';
 import promBundle from 'express-prom-bundle';
@@ -24,6 +28,7 @@ export default class App {
     private logger: Logger;
 
     constructor(database: DatabaseInterface, logger: Logger) {
+
         this.app = express();
         this.port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
         this.database = database;
@@ -67,22 +72,36 @@ export default class App {
     }
 
     private initializeRoutes() {
-        // this.app.use('/api/user', userRouter);
         this.app.use('/api/artist', artistRouter(this.logger));
         this.app.use('/api/user', userRouter(this.logger));
         this.logger.info('Routes initialized');
     }
 
     public async start() {
-        dotenv.config();
+
+        // Access the database connection string from the environment variables
+        const databaseUrl = process.env.DB_URI;
+
+        // Check if the environment variable is defined
+        if (!databaseUrl) {
+            console.error('DB_URI is not defined. Please set the environment variable.');
+            process.exit(1); // Exit the process if DB_URI is missing
+        }
+
+        // Log the database connection string for debugging purposes
+        console.log('Database connection string:', databaseUrl);
+
         try {
+            // Attempt to connect to the database
             await this.database.connect();
             this.logger.info('Database connected successfully');
 
+            // Start the server and listen on the specified port
             this.app.listen(this.port, () => {
                 this.logger.info(`Server is running on port ${this.port}`);
             });
         } catch (error) {
+            // Log any errors that occur during the startup process
             this.logger.error('Failed to connect to the database:', error);
         }
     }
