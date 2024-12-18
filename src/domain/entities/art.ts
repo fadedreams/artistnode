@@ -53,7 +53,7 @@ export interface IArt extends Document {
     releaseDate?: Date;
     status?: 'public' | 'private';
     type?: string;
-    artcats: string[];
+    artcats?: string[];
     tags?: string[];
     artists: {
         artist?: Types.ObjectId;
@@ -63,15 +63,20 @@ export interface IArt extends Document {
     writers: Types.ObjectId[];
     poster?: {
         url?: string;
-        public_id?: string; // Make public_id optional
-        responsive: string[];
+        fileName?: string; // Add fileName property
+        public_id?: string;
+        responsive?: string[];
+        reviews?: Types.ObjectId[];
     };
-    reviews: Types.ObjectId[];
     createdAt: Date;
     updatedAt: Date;
 }
+
 export interface UpdatedArtResponse {
     success: boolean;
-    updatedArt: null | IArt;
+    updatedArt: null | IArt | Error;
 }
+
+
+export type ArtUpdateResult = IArt | Error | null;
 

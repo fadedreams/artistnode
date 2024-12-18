@@ -79,8 +79,26 @@ export default class App {
         this.logger.info('Routes initialized');
     }
 
-    public async start() {
+    private validateEnvVariables() {
+        const requiredEnvVariables = [
+            'JWT_SECRET',
+            'DB_URI',
+            'PORT',
+            'MINIO_SERVER',
+            'MINIO_USER',
+            'MINIO_PASS',
+        ];
 
+        const missingEnvVariables = requiredEnvVariables.filter((envVar) => !process.env[envVar]);
+
+        if (missingEnvVariables.length > 0) {
+            throw new Error(
+                `Missing required environment variables: ${missingEnvVariables.join(', ')}`
+            );
+        }
+    }
+    public async start() {
+        this.validateEnvVariables();
         // Access the database connection string from the environment variables
         const databaseUrl = process.env.DB_URI;
 

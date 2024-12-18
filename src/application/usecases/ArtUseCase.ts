@@ -1,6 +1,6 @@
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
-import { IArt } from '@src/domain/entities/art';
 import { Logger } from 'winston';
+import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, IArt, UpdatedArtResponse, ArtUpdateResult } from '@src/domain/entities/art';
 
 export class ArtUseCase {
     private artRepository: ArtRepository;
@@ -23,13 +23,23 @@ export class ArtUseCase {
     }
 
     // Update Art
-    async updateArt(artId: string, artData: any) {  // Replace UpdateArtDTO with 'any' or appropriate type
+    // async updateArt(artId: string, artData: any): Promise<IArt | Error | null> {
+    async updateArt(artId: string, artData: any): Promise<ArtUpdateResult> {
         try {
-            const updatedArt = await this.artRepository.updateArt(artId, artData);
-            return { success: true, updatedArt };
+            // Call the repository method
+            const response: UpdatedArtResponse = await this.artRepository.updateArt(artId, artData);
+
+            // Check if the response indicates a successful update
+            if (!response.success || !response.updatedArt) {
+                this.logger.error('Art not found or update failed:', { artId });
+                return null; // No art found or update unsuccessful
+            }
+
+            // Return the updated art
+            return response.updatedArt;
         } catch (error: unknown) {
             this.logger.error('Error updating art:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+            return new Error('An unknown error occurred');
         }
     }
 

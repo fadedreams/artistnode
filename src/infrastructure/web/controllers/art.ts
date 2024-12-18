@@ -65,7 +65,11 @@ export default class ArtController {
                         // Upload file to MinIO
                         await minioClient.putObject('art', fileName, fileBuffer);
                         // Set the poster with the MinIO file details
-                        newArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
+                        // newArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
+                        newArt.poster = {
+                            url: `https://${process.env.MINIO_SERVER}/art/${fileName}`,
+                            fileName
+                        };
                     } catch (minioError) {
                         this.logger.error('Failed to upload file to MinIO', minioError);
                         return res.status(500).json({ error: 'Failed to upload file to MinIO' });
@@ -98,19 +102,24 @@ export default class ArtController {
             // Validate the incoming data if necessary
             const artData = { name, about, gender };
 
-            const { success, updatedArt, error } = await this.artUseCase.updateArt(id, artData);
+            // Call the use case to update the art
+            const result = await this.artUseCase.updateArt(id, artData);
 
-            if (error) {
-                this.logger.error('Error updating art:', error);
-                // return res.status(400).json({ error });
+            // Check if the result is an instance of Error
+            if (result instanceof Error) {
+                this.logger.error('Error updating art:', result.message);
+                // return res.status(400).json({ error: result.message });
                 return
             }
 
-            if (!success || !updatedArt) {
+            // Check if the result is null (art not found)
+            if (!result) {
                 this.logger.error('Error updating art: No art found', { id });
                 // return res.status(404).json({ message: `No art with id: ${id}` });
                 return
             }
+
+            const updatedArt = result; // Now you know result is an IArt
 
             if (file) {
                 const fileName = Date.now() + '-' + file.originalname;
@@ -120,10 +129,14 @@ export default class ArtController {
                     // Upload file to MinIO
                     await minioClient.putObject('art', fileName, fileBuffer);
                     // Update the avatar with the MinIO file details
+
                     if (updatedArt) {
-                        // updatedArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
-                        updatedArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
+                        updatedArt.poster = {
+                            url: `https://${process.env.MINIO_SERVER}/art/${fileName}`,
+                            fileName
+                        };
                     }
+
                 } catch (minioError) {
                     this.logger.error('Failed to upload file to MinIO', minioError);
                     // return res.status(500).json({ error: 'Failed to upload file to MinIO' });
@@ -134,6 +147,7 @@ export default class ArtController {
             this.logger.info('Art updated successfully', { updatedArt });
             res.status(200).json(updatedArt);
         } catch (error) {
+            // Catch any unexpected errors
             this.logger.error('Error updating art:', error instanceof Error ? error.message : 'Unknown error');
             res.status(400).json({ error: 'An unknown error occurred' });
         }
