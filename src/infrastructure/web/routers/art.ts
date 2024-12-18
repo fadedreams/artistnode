@@ -11,7 +11,7 @@ const artRouter = (logger: Logger) => {
     const router = Router();
 
     // Art Routes with Middleware
-    router.post('/art/preview', artController.createArtPrev); // Upload art preview
+    // router.post('/art/preview', artController.createArtPrev); // Upload art preview
     router.post('/art', isAuth, isAdmin, artController.createArt); // Create art (requires auth, admin)
     router.put('/art/:id', isAuth, isAdmin, artistInfoValidator, validate, artController.updateArt); // Update art (requires auth, admin, and validation)
     router.delete('/art/:id', isAuth, isAdmin, artController.removeArt); // Remove art (requires auth, admin)

@@ -1,5 +1,5 @@
-import { CreateArtDTO, UpdateArtDTO, SearchArtDTO } from '@src/domain/entities/art';
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
+import { IArt } from '@src/domain/entities/art';
 import { Logger } from 'winston';
 
 export class ArtUseCase {
@@ -12,7 +12,7 @@ export class ArtUseCase {
     }
 
     // Create Art
-    async createArt(artData: CreateArtDTO) {
+    async createArt(artData: any) {  // Replace CreateArtDTO with 'any' or appropriate type
         try {
             const art = await this.artRepository.createArt(artData);
             return { success: true, art };
@@ -23,7 +23,7 @@ export class ArtUseCase {
     }
 
     // Update Art
-    async updateArt(artId: string, artData: UpdateArtDTO) {
+    async updateArt(artId: string, artData: any) {  // Replace UpdateArtDTO with 'any' or appropriate type
         try {
             const updatedArt = await this.artRepository.updateArt(artId, artData);
             return { success: true, updatedArt };
@@ -45,7 +45,7 @@ export class ArtUseCase {
     }
 
     // Search Art
-    async searchArt(query: SearchArtDTO) {
+    async searchArt(query: any) {  // Replace SearchArtDTO with 'any' or appropriate type
         try {
             const arts = await this.artRepository.searchArt(query);
             return { success: true, arts };

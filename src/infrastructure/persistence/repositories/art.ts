@@ -1,5 +1,5 @@
 import ArtModel from '@src/infrastructure/persistence/models/artModel';
-import { CreateArtDTO, UpdateArtDTO, SearchArtDTO } from '@src/domain/entities/art';
+import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, IArt, UpdatedArtResponse } from '@src/domain/entities/art';
 import { Logger } from 'winston';
 
 export class ArtRepository {
@@ -23,21 +23,35 @@ export class ArtRepository {
     }
 
     // Update Art
-    async updateArt(artId: string, artData: UpdateArtDTO) {
+    async updateArt(artId: string, artData: UpdateArtDTO): Promise<UpdatedArtResponse> {
         try {
-            const art = await ArtModel.findByIdAndUpdate(artId, artData, { new: true });
-            if (!art) {
-                this.logger.error('Art not found:', artId); // Log error if art not found
-                return null;
+            const updatedArt = await ArtModel.findByIdAndUpdate(artId, artData, { new: true });
+            if (!updatedArt) {
+                this.logger.error('Art not found:', artId);
+                return { success: false, updatedArt: null };
             }
-            this.logger.info('Art updated:', artId); // Log success message
-            return art;
+
+            // Handle the case where updatedArt.poster.url is undefined
+            if (updatedArt.poster && updatedArt.poster.url === undefined) {
+                updatedArt.poster.url = ''; // Set a default value or handle it as needed
+            }
+
+            // Handle the case where updatedArt.poster.public_id is undefined
+            if (updatedArt.poster && updatedArt.poster.public_id === undefined) {
+                updatedArt.poster.public_id = ''; // Set a default value or handle it as needed
+            }
+
+            this.logger.info('Art updated:', artId);
+            return { success: true, updatedArt };
         } catch (error) {
-            this.logger.error('Error updating art:', error.message);
-            return null;
+            if (error instanceof Error) {
+                this.logger.error('Error updating art:', error.message);
+            } else {
+                this.logger.error('Unknown error updating art');
+            }
+            return { success: false, updatedArt: null };
         }
     }
-
     // Remove Art
     async removeArt(artId: string) {
         const result = await ArtModel.findByIdAndDelete(artId);

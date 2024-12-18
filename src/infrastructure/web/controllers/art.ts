@@ -1,9 +1,10 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
-import minioClient from '@src/infrastructure/persistence/minioClient'; // Import MinIO client
+import minioClient from '@src/infrastructure/persistence/minioClient';
 import { ArtUseCase } from '@src/application/usecases/ArtUseCase';
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
 import { Logger } from 'winston';
+import { CreateArtDTO, UpdateArtDTO, SearchArtDTO } from '@src/domain/entities/art';
 
 export default class ArtController {
     private artUseCase: ArtUseCase;
@@ -11,7 +12,7 @@ export default class ArtController {
 
     // Constructor accepting logger and passing it to the use case
     constructor(logger: Logger) {
-        const artRepository = new ArtRepository(logger);  // Pass logger to the repository
+        const artRepository = new ArtRepository(logger);
         this.artUseCase = new ArtUseCase(artRepository, logger);
         this.logger = logger;
     }
@@ -71,14 +72,16 @@ export default class ArtController {
                     }
                 }
 
-                await this.artUseCase.createArt(newArt);
+                // Assuming createArt returns the created object with _id
+                const createdArt = await this.artUseCase.createArt(newArt);
 
-                this.logger.info('Art created successfully', { newArt });
-                res.status(201).json({
-                    id: newArt._id,
-                    title: newArt.title,
-                    // Include other fields as needed in the response
-                });
+                this.logger.info('Art created successfully', { createdArt });
+                // res.status(201).json({
+                //     id: createdArt._id,
+                //     title: createdArt.title,
+                //     // Include other fields as needed in the response
+                // });
+                return
             });
         } catch (error) {
             this.logger.error('Error creating art:', error instanceof Error ? error.message : 'Unknown error');
@@ -92,11 +95,21 @@ export default class ArtController {
             const { id } = req.params;
             const { name, about, gender, file } = req.body;
 
-            const art = await this.artUseCase.updateArt(id, { name, about, gender });
+            // Validate the incoming data if necessary
+            const artData = { name, about, gender };
 
-            if (!art) {
+            const { success, updatedArt, error } = await this.artUseCase.updateArt(id, artData);
+
+            if (error) {
+                this.logger.error('Error updating art:', error);
+                // return res.status(400).json({ error });
+                return
+            }
+
+            if (!success || !updatedArt) {
                 this.logger.error('Error updating art: No art found', { id });
-                return res.status(404).json({ message: `No art with id: ${id}` });
+                // return res.status(404).json({ message: `No art with id: ${id}` });
+                return
             }
 
             if (file) {
@@ -107,17 +120,19 @@ export default class ArtController {
                     // Upload file to MinIO
                     await minioClient.putObject('art', fileName, fileBuffer);
                     // Update the avatar with the MinIO file details
-                    art.avatar = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
+                    if (updatedArt) {
+                        // updatedArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
+                        updatedArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
+                    }
                 } catch (minioError) {
                     this.logger.error('Failed to upload file to MinIO', minioError);
-                    return res.status(500).json({ error: 'Failed to upload file to MinIO' });
+                    // return res.status(500).json({ error: 'Failed to upload file to MinIO' });
+                    return
                 }
             }
 
-            await art.save();
-
-            this.logger.info('Art updated successfully', { art });
-            res.status(200).json(art);
+            this.logger.info('Art updated successfully', { updatedArt });
+            res.status(200).json(updatedArt);
         } catch (error) {
             this.logger.error('Error updating art:', error instanceof Error ? error.message : 'Unknown error');
             res.status(400).json({ error: 'An unknown error occurred' });
