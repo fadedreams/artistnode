@@ -11,11 +11,6 @@ export class ReviewUseCase {
         this.logger = logger;
     }
 
-    async checkReviewExistence(userId: string, artId: string): Promise<boolean> {
-        const review = await this.reviewRepository.findReviewByUserAndArt(userId, artId);
-        return review !== null;
-    }
-
     // Create Review
     async createReview(reviewData: CreateReviewDTO) {
         try {
@@ -34,13 +29,13 @@ export class ReviewUseCase {
 
             if (!response.success || !response.updatedReview) {
                 this.logger.error('Review not found or update failed:', { reviewId });
-                return { success: false, updatedReview: null }; // Ensure we return the expected structure
+                return null;
             }
 
-            return { success: true, updatedReview: response.updatedReview };
+            return response.updatedReview;
         } catch (error: unknown) {
             this.logger.error('Error updating review:', error instanceof Error ? error.message : 'Unknown error');
-            return { success: false, updatedReview: null }; // Handle errors
+            return new Error('An unknown error occurred');
         }
     }
 
@@ -62,6 +57,17 @@ export class ReviewUseCase {
             return { success: true, review };
         } catch (error: unknown) {
             this.logger.error('Error fetching review by ID:', error instanceof Error ? error.message : 'Unknown error');
+            return { error: 'An unknown error occurred' };
+        }
+    }
+
+    // Search Reviews
+    async searchReviews(query: any) {
+        try {
+            const reviews = await this.reviewRepository.searchReviews(query);
+            return { success: true, reviews };
+        } catch (error: unknown) {
+            this.logger.error('Error searching reviews:', error instanceof Error ? error.message : 'Unknown error');
             return { error: 'An unknown error occurred' };
         }
     }

@@ -1,14 +1,17 @@
-// src/domain/entities/review.ts
-
+import { ObjectId } from 'mongoose';
 export interface IReview {
-    _id: string;
-    artId: string;
-    userId: string;
-    rating: number;
-    comment: string;
-    createdAt: Date;
-    updatedAt: Date;
+    _id?: ObjectId;
+    owner?: ObjectId;
+    parentArt?: ObjectId;
+    rating?: number;
+    content?: string;
+    artId?: ObjectId;
+    userId?: ObjectId;
+    comment?: string;
+    createdAt?: Date;
+    updatedAt?: Date;
 }
+
 
 export interface CreateReviewDTO {
     artId: string;
@@ -28,15 +31,18 @@ export interface SearchReviewDTO {
     rating?: number;
 }
 
-// Response type for updating a review
 export interface UpdatedReviewResponse {
     success: boolean;
     updatedReview: IReview | null;
 }
 
-// Type for the result of updating a review
 export interface ReviewUpdateResult {
     success: boolean;
     updatedReview: IReview | null;
 }
 
+export interface CreateReviewResponse {
+    success: boolean;
+    review: IReview | null;
+    error?: string;
+}

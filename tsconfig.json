@@ -3,7 +3,7 @@
         "target": "ES6",
         "module": "CommonJS",
         "outDir": "./dist",
-        "strict": true,
+        "strict": false,
         "allowJs": true,
         "checkJs": false,
         "noEmit": false,

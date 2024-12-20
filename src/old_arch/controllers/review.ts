@@ -1,4 +1,5 @@
 
+import { Router, Request, Response, NextFunction } from 'express';
 import { isValidObjectId } from "mongoose";
 import Art from "@src/models/art.js";
 import Review from "@src/models/review";
@@ -81,36 +82,50 @@ export const removeReview = async (req, res) => {
     res.json({ message: "Review removed successfully." });
 };
 
-export const getReviewsByArt = async (req, res) => {
+export const getReviewsByArt = async (req: Request, res: Response): Promise<Response> => {
     const { artId } = req.params;
 
-    //if (!isValidObjectId(artId)) res.status(400).json({ message: "Invalid ID!" });
+    // Validate the artId if needed (commented out here for now)
+    // if (!isValidObjectId(artId)) return res.status(400).json({ message: "Invalid ID!" });
 
-    const art = await Art.findById(artId)
-        .populate({
-            path: "reviews",
-            populate: {
-                path: "owner",
-                select: "name",
-            },
-        })
-        .select("reviews title");
+    try {
+        // Fetch the Art document and populate reviews
+        const art = await Art.findById(artId)
+            .populate({
+                path: "reviews",
+                populate: {
+                    path: "owner",
+                    select: "name",
+                },
+            })
+            .select("reviews title");
 
-    const reviews = art.reviews.map((r) => {
-        const { owner, content, rating, _id: reviewID } = r;
-        const { name, _id: ownerId } = owner;
+        if (!art) {
+            return res.status(404).json({ message: "Art not found!" });
+        }
 
-        return {
-            id: reviewID,
-            owner: {
-                id: ownerId,
-                name,
-            },
-            content,
-            rating,
-        };
-    });
+        // Map over reviews to extract necessary data
+        const reviews = art.reviews.map((r: Review) => { // Type 'r' as Review
+            const { owner, content, rating, _id: reviewID } = r;
+            const { name, _id: ownerId } = owner;
 
-    res.json({ art: { reviews, title: art.title } });
+            return {
+                id: reviewID,
+                owner: {
+                    id: ownerId,
+                    name,
+                },
+                content,
+                rating,
+            };
+        });
+
+        // Return the reviews and title in the response
+        res.json({ art: { reviews, title: art.title } });
+
+    } catch (error) {
+        console.error('Error fetching reviews:', error);
+        res.status(500).json({ message: 'An unknown error occurred while fetching reviews.' });
+    }
 };
 

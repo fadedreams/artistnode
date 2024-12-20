@@ -22,7 +22,7 @@ export default class ArtController {
     private upload = multer({ storage: this.storage });
 
     // Create Art
-    createArt = async (req: Request, res: Response): Promise<void> => {
+    createArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             this.upload.single('file')(req, res, async (err: any) => {
                 if (err) {
@@ -65,7 +65,6 @@ export default class ArtController {
                         // Upload file to MinIO
                         await minioClient.putObject('art', fileName, fileBuffer);
                         // Set the poster with the MinIO file details
-                        // newArt.poster = { url: `https://<minio-server-url>/art/${fileName}`, fileName };
                         newArt.poster = {
                             url: `https://${process.env.MINIO_SERVER}/art/${fileName}`,
                             fileName
@@ -76,50 +75,42 @@ export default class ArtController {
                     }
                 }
 
-                // Assuming createArt returns the created object with _id
                 const createdArt = await this.artUseCase.createArt(newArt);
-
                 this.logger.info('Art created successfully', { createdArt });
-                // res.status(201).json({
-                //     id: createdArt._id,
-                //     title: createdArt.title,
-                //     // Include other fields as needed in the response
-                // });
-                return
+
+                return res.status(201).json({
+                    id: createdArt._id,
+                    title: createdArt.title,
+                    // Include other fields as needed in the response
+                });
             });
         } catch (error) {
             this.logger.error('Error creating art:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
     // Update Art
-    updateArt = async (req: Request, res: Response): Promise<void> => {
+    updateArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
             const { name, about, gender, file } = req.body;
 
-            // Validate the incoming data if necessary
             const artData = { name, about, gender };
 
-            // Call the use case to update the art
             const result = await this.artUseCase.updateArt(id, artData);
 
-            // Check if the result is an instance of Error
             if (result instanceof Error) {
                 this.logger.error('Error updating art:', result.message);
-                // return res.status(400).json({ error: result.message });
-                return
+                return res.status(400).json({ error: result.message });
             }
 
-            // Check if the result is null (art not found)
             if (!result) {
                 this.logger.error('Error updating art: No art found', { id });
-                // return res.status(404).json({ message: `No art with id: ${id}` });
-                return
+                return res.status(404).json({ message: `No art with id: ${id}` });
             }
 
-            const updatedArt = result; // Now you know result is an IArt
+            const updatedArt = result;
 
             if (file) {
                 const fileName = Date.now() + '-' + file.originalname;
@@ -128,7 +119,6 @@ export default class ArtController {
                 try {
                     // Upload file to MinIO
                     await minioClient.putObject('art', fileName, fileBuffer);
-                    // Update the avatar with the MinIO file details
 
                     if (updatedArt) {
                         updatedArt.poster = {
@@ -139,107 +129,101 @@ export default class ArtController {
 
                 } catch (minioError) {
                     this.logger.error('Failed to upload file to MinIO', minioError);
-                    // return res.status(500).json({ error: 'Failed to upload file to MinIO' });
-                    return
+                    return res.status(500).json({ error: 'Failed to upload file to MinIO' });
                 }
             }
 
             this.logger.info('Art updated successfully', { updatedArt });
-            res.status(200).json(updatedArt);
+            return res.status(200).json(updatedArt);
         } catch (error) {
-            // Catch any unexpected errors
             this.logger.error('Error updating art:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
     // Remove Art
-    removeArt = async (req: Request, res: Response): Promise<void> => {
+    removeArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
             const art = await this.artUseCase.removeArt(id);
 
             if (!art) {
                 this.logger.error('Error removing art: No art found', { id });
-                // return res.status(404).json({ message: 'Art not found' });
-                return
+                return res.status(404).json({ message: 'Art not found' });
             }
 
             this.logger.info('Art removed successfully', { id });
-            res.status(200).json({ message: 'Art removed successfully' });
+            return res.status(200).json({ message: 'Art removed successfully' });
         } catch (error) {
             this.logger.error('Error removing art:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
     // Search Art
-    searchArt = async (req: Request, res: Response): Promise<void> => {
+    searchArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { name } = req.query;
             if (name && name.toString().trim()) {
-                this.logger.error('searchArt: !null');
-                return;
+                return res.status(400).json({ error: 'Invalid search query' });
             }
             const result = await this.artUseCase.searchArt(name);
             this.logger.info('Art search performed', { name });
-            res.status(200).json({ art: result });
+            return res.status(200).json({ art: result });
         } catch (error) {
             this.logger.error('Error searching art:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
+
     // Get Latest Art
-    getLatestArt = async (req: Request, res: Response): Promise<void> => {
+    getLatestArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const result = await this.artUseCase.getLatestArt();
             this.logger.info('Latest art fetched');
-            res.status(200).json({ art: result });
+            return res.status(200).json({ art: result });
         } catch (error) {
             this.logger.error('Error fetching latest art:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
     // Get Single Art
-    getSingleArt = async (req: Request, res: Response): Promise<void> => {
+    getSingleArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
             const art = await this.artUseCase.getSingleArt(id);
 
             if (!art) {
                 this.logger.error('Art not found', { id });
-                // return res.status(404).json({ message: 'Art not found' });
-                return
+                return res.status(404).json({ message: 'Art not found' });
             }
 
             this.logger.info('Art details fetched', { id });
-            res.status(200).json({ art });
+            return res.status(200).json({ art });
         } catch (error) {
             this.logger.error('Error fetching art by ID:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
     // Get Art
-    getArt = async (req: Request, res: Response): Promise<void> => {
+    getArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const pageNo = Number(req.query.pageNo);
             const limit = Number(req.query.limit);
 
             if (isNaN(pageNo) || isNaN(limit)) {
-                res.status(400).json({ error: 'Invalid pageNo or limit value' });
-                return;
+                return res.status(400).json({ error: 'Invalid pageNo or limit value' });
             }
 
             const result = await this.artUseCase.getArt(pageNo, limit);
 
             this.logger.info('Fetched paginated art');
-            res.status(200).json({ art: result });
+            return res.status(200).json({ art: result });
         } catch (error) {
             this.logger.error('Error fetching art:', error instanceof Error ? error.message : 'Unknown error');
-            res.status(400).json({ error: 'An unknown error occurred' });
+            return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 }
-

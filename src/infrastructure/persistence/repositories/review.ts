@@ -1,5 +1,5 @@
 import ReviewModel from '@src/infrastructure/persistence/models/reviewModel';
-import { CreateReviewDTO, UpdateReviewDTO, SearchReviewDTO, IReview } from '@src/domain/entities/review';
+import { CreateReviewDTO, UpdateReviewDTO, IReview, UpdatedReviewResponse, ReviewUpdateResult, CreateReviewResponse } from '@src/domain/entities/review';
 import { Logger } from 'winston';
 
 export class ReviewRepository {

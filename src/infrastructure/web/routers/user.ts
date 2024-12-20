@@ -20,9 +20,30 @@ class UserRouter {
     private initializeRoutes() {
         this.logger.info('Initializing user routes');
 
-        this.router.post('/create', userValidator, validate, this.userController.create);
-        this.router.post('/signin', signInValidator, validate, this.userController.signIn);
-        this.router.get('/isauth', isAuth, this.isAuthHandler);
+        // this.router.post('/create', userValidator, validate, this.userController.create);
+        this.router.post('/create', userValidator, validate, async (req, res, next) => {
+            try {
+                await this.userController.create(req, res);
+            } catch (error) {
+                next(error);
+            }
+        });
+        // this.router.post('/signin', signInValidator, validate, this.userController.signIn);
+        this.router.post('/signin', signInValidator, validate, async (req, res, next) => {
+            try {
+                await this.userController.signIn(req, res);
+            } catch (error) {
+                next(error);
+            }
+        });
+        // this.router.get('/isauth', isAuth, this.isAuthHandler);
+        this.router.get('/isauth', isAuth, async (req, res, next) => {
+            try {
+                this.isAuthHandler(req, res);
+            } catch (error) {
+                next(error);
+            }
+        });
     }
 
     private isAuthHandler = (req: Request, res: Response) => {

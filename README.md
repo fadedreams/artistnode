@@ -77,3 +77,4 @@ curl -X POST http://localhost:3000/api/artist/create \
     -F "gender=gender1"
 
 ```
+domain/entities

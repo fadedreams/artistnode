@@ -69,8 +69,7 @@ export default class ArtistController {
             const updatedArtist = await this.artistUseCase.updateArtist(artistId, artistData);
             if (updatedArtist.error) {
                 this.logger.error('Error updating artist:', updatedArtist.error);
-                // return res.status(400).json({ error: updatedArtist.error });
-                return
+                return res.status(400).json({ error: updatedArtist.error });
             }
 
             this.logger.info('Artist updated successfully', { updatedArtist });
@@ -88,8 +87,7 @@ export default class ArtistController {
             const result = await this.artistUseCase.removeArtist(artistId);
             if (result.error) {
                 this.logger.error('Error removing artist:', result.error);
-                // return res.status(400).json({ error: result.error });
-                return
+                return res.status(400).json({ error: result.error });
             }
 
             this.logger.info('Artist removed successfully', { artistId });
@@ -146,4 +144,3 @@ export default class ArtistController {
         }
     };
 }
-
