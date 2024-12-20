@@ -7,7 +7,7 @@ import { ReviewUseCase } from '@src/application/usecases/ReviewUseCase';
 import { ReviewRepository } from '@src/infrastructure/persistence/repositories/review';
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { CreateReviewDTO, UpdateReviewDTO, IReview, UpdatedReviewResponse, ReviewUpdateResult } from '@src/domain/entities/review';
+import { CreateReviewDTO, UpdateReviewDTO, IReview, UpdatedReviewResponse } from '@src/domain/entities/review';
 
 export default class ReviewController {
     private reviewUseCase: ReviewUseCase;
@@ -55,6 +55,12 @@ export default class ReviewController {
             };
 
             const newReview = await this.reviewUseCase.createReview(reviewData);
+
+            // Check if there was an error while creating the review
+            if (newReview.error) {
+                this.logger.error('Error creating review:', newReview.error);
+                return res.status(500).json({ message: 'An unknown error occurred while creating the review.' });
+            }
 
             art.reviews.push(newReview.review._id);
             await art.save();

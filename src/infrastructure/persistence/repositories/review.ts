@@ -1,5 +1,5 @@
 import ReviewModel from '@src/infrastructure/persistence/models/reviewModel';
-import { CreateReviewDTO, UpdateReviewDTO, IReview, UpdatedReviewResponse, ReviewUpdateResult, CreateReviewResponse } from '@src/domain/entities/review';
+import { CreateReviewDTO, UpdateReviewDTO, IReview, ReviewData, UpdatedReviewResponse, CreateReviewResponse, SearchReviewDTO } from '@src/domain/entities/review';
 import { Logger } from 'winston';
 
 export class ReviewRepository {
@@ -18,20 +18,20 @@ export class ReviewRepository {
         return review;
     }
     // Create Review
-    async createReview(reviewData: CreateReviewDTO) {
-        const existingReview = await ReviewModel.findOne({ artId: reviewData.artId, userId: reviewData.userId });
+    async createReview(reviewData: CreateReviewDTO): Promise<CreateReviewResponse> {
+        const existingReview: IReview = await ReviewModel.findOne({ artId: reviewData.artId, userId: reviewData.userId });
         if (existingReview) {
-            this.logger.error('Review already exists:', { artId: reviewData.artId, userId: reviewData.userId }); // Log error if review exists
+            this.logger.error('Review already exists:', { artId: reviewData.artId, userId: reviewData.userId });
             return { error: 'Review already exists!' };
         }
         const review = new ReviewModel(reviewData);
         await review.save();
-        this.logger.info('Review created:', { artId: reviewData.artId, userId: reviewData.userId }); // Log success message
-        return review;
+        this.logger.info('Review created:', { artId: reviewData.artId, userId: reviewData.userId });
+        return { success: true, review }; // Return full Mongoose document
     }
 
     // Update Review
-    async updateReview(reviewId: string, reviewData: UpdateReviewDTO) {
+    async updateReview(reviewId: string, reviewData: UpdateReviewDTO): Promise<UpdatedReviewResponse> {
         try {
             const updatedReview = await ReviewModel.findByIdAndUpdate(reviewId, reviewData, { new: true });
 
@@ -106,6 +106,39 @@ export class ReviewRepository {
         const reviews = await ReviewModel.find({ artId }).skip(skip).limit(limit);
         this.logger.info('Fetched reviews for art:', artId); // Log fetching reviews for a specific art
         return reviews;
+    }
+    // Add this method to the ReviewRepository class
+    async getReviewByUserAndId(userId: string, reviewId: string): Promise<IReview | null> {
+        try {
+            const review = await ReviewModel.findOne({ userId, _id: reviewId });
+
+            if (!review) {
+                this.logger.error(`Review with ID ${reviewId} not found for user with ID ${userId}`);
+                return null;
+            }
+
+            return review;
+        } catch (error: unknown) {
+            this.logger.error('Error fetching review by user and ID:', error instanceof Error ? error.message : 'Unknown error');
+            return null;
+        }
+    }
+
+    // Check if a review exists for a user and art
+    async checkReviewExistence(userId: string, artId: string): Promise<boolean> {
+        try {
+            const existingReview = await ReviewModel.findOne({ userId, artId });
+            if (existingReview) {
+                this.logger.info(`Review found for user with ID ${userId} and art with ID ${artId}`);
+                return true; // Review exists
+            } else {
+                this.logger.info(`No review found for user with ID ${userId} and art with ID ${artId}`);
+                return false; // Review does not exist
+            }
+        } catch (error: unknown) {
+            this.logger.error('Error checking review existence:', error instanceof Error ? error.message : 'Unknown error');
+            return false; // Return false in case of error
+        }
     }
 }
 

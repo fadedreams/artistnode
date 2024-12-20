@@ -1,15 +1,11 @@
-import { ObjectId } from 'mongoose';
-export interface IReview {
-    _id?: ObjectId;
-    owner?: ObjectId;
-    parentArt?: ObjectId;
-    rating?: number;
-    content?: string;
-    artId?: ObjectId;
-    userId?: ObjectId;
-    comment?: string;
-    createdAt?: Date;
-    updatedAt?: Date;
+import mongoose from 'mongoose';
+import { Document } from 'mongoose';
+
+export interface IReview extends Document {
+    owner?: mongoose.Types.ObjectId;  // Refers to the User model
+    parentArt?: mongoose.Types.ObjectId;  // Refers to the Art model
+    content?: string;  // The content of the review
+    rating?: number;  // Rating given to the art (usually between 1-5)
 }
 
 
@@ -31,18 +27,23 @@ export interface SearchReviewDTO {
     rating?: number;
 }
 
-export interface UpdatedReviewResponse {
-    success: boolean;
-    updatedReview: IReview | null;
+
+
+export interface ReviewData {
+    owner?: mongoose.Types.ObjectId;
+    parentArt?: mongoose.Types.ObjectId;
+    content?: string;
+    rating?: number;
 }
 
-export interface ReviewUpdateResult {
-    success: boolean;
-    updatedReview: IReview | null;
-}
-
-export interface CreateReviewResponse {
-    success: boolean;
-    review: IReview | null;
-    error?: string;
-}
+export type CreateReviewResponse = { success?: boolean, review?: ReviewData, error?: string } | { success?: boolean, error?: string };
+export type UpdatedReviewResponse = {
+    success?: boolean,
+    updatedReview?: ReviewData, // Add this line to include updatedReview
+    error?: string
+} | {
+    success?: boolean,
+    error?: string
+} | {
+    errir?: string
+};

@@ -1,7 +1,7 @@
 import { ReviewRepository } from '@src/infrastructure/persistence/repositories/review';
 import { Logger } from 'winston';
-import { CreateReviewDTO, UpdateReviewDTO, IReview, UpdatedReviewResponse, ReviewUpdateResult } from '@src/domain/entities/review';
 
+import { CreateReviewDTO, UpdateReviewDTO, IReview, ReviewData, UpdatedReviewResponse, CreateReviewResponse } from '@src/domain/entities/review';
 export class ReviewUseCase {
     private reviewRepository: ReviewRepository;
     private logger: Logger;
@@ -12,10 +12,10 @@ export class ReviewUseCase {
     }
 
     // Create Review
-    async createReview(reviewData: CreateReviewDTO) {
+    async createReview(reviewData: CreateReviewDTO): Promise<CreateReviewResponse> {
         try {
             const review = await this.reviewRepository.createReview(reviewData);
-            return { success: true, review };
+            return review;
         } catch (error: unknown) {
             this.logger.error('Error creating review:', error instanceof Error ? error.message : 'Unknown error');
             return { error: 'An unknown error occurred' };
@@ -23,19 +23,13 @@ export class ReviewUseCase {
     }
 
     // Update Review
-    async updateReview(reviewId: string, reviewData: UpdateReviewDTO): Promise<ReviewUpdateResult> {
+    async updateReview(reviewId: string, reviewData: UpdateReviewDTO): Promise<UpdatedReviewResponse> {
         try {
             const response: UpdatedReviewResponse = await this.reviewRepository.updateReview(reviewId, reviewData);
-
-            if (!response.success || !response.updatedReview) {
-                this.logger.error('Review not found or update failed:', { reviewId });
-                return null;
-            }
-
-            return response.updatedReview;
+            return response;
         } catch (error: unknown) {
             this.logger.error('Error updating review:', error instanceof Error ? error.message : 'Unknown error');
-            return new Error('An unknown error occurred');
+            return { error: 'An unknown error occurred' };
         }
     }
 
@@ -50,7 +44,7 @@ export class ReviewUseCase {
         }
     }
 
-    // Get Review by ID
+    // Get Single Review by ID
     async getSingleReview(reviewId: string) {
         try {
             const review = await this.reviewRepository.getSingleReview(reviewId);
@@ -58,6 +52,23 @@ export class ReviewUseCase {
         } catch (error: unknown) {
             this.logger.error('Error fetching review by ID:', error instanceof Error ? error.message : 'Unknown error');
             return { error: 'An unknown error occurred' };
+        }
+    }
+
+    // Get Review by User and Review ID
+    async getReviewByUserAndId(userId: string, reviewId: string): Promise<IReview | null> {
+        try {
+            const review = await this.reviewRepository.getReviewByUserAndId(userId, reviewId);
+
+            if (!review) {
+                this.logger.error(`Review with ID ${reviewId} not found for user with ID ${userId}`);
+                return null;
+            }
+
+            return review;
+        } catch (error: unknown) {
+            this.logger.error('Error fetching review by user and ID:', error instanceof Error ? error.message : 'Unknown error');
+            return null;
         }
     }
 
@@ -82,5 +93,20 @@ export class ReviewUseCase {
             return { error: 'An unknown error occurred' };
         }
     }
-}
+    // Check if a user has already reviewed an art piece
+    async checkReviewExistence(userId: string, artId: string): Promise<boolean> {
+        try {
+            const existingReview = await this.reviewRepository.checkReviewExistence(userId, artId);
 
+            if (existingReview) {
+                this.logger.info(`User ${userId} has already reviewed art ${artId}`);
+                return true;
+            }
+
+            return false;
+        } catch (error: unknown) {
+            this.logger.error('Error checking review existence:', error instanceof Error ? error.message : 'Unknown error');
+            return false;
+        }
+    }
+}
