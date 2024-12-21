@@ -1,16 +1,14 @@
-// Load environment variables
 import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Application } from 'express';
 import cors from 'cors';
-
 import session from 'express-session';
 import RedisStore from 'connect-redis';
 import promBundle from 'express-prom-bundle';
 
 import { Database as DatabaseInterface } from '@src/domain/interfaces/Database';
-import { createClient } from 'redis';
+import { RedisClientType, createClient } from 'redis';
 
 import userRouter from '@src/infrastructure/web/routers/user';
 import artistRouter from '@src/infrastructure/web/routers/artist';
@@ -18,6 +16,9 @@ import artRouter from '@src/infrastructure/web/routers/art';
 import reviewRouter from '@src/infrastructure/web/routers/review';
 
 import { Logger } from 'winston';
+
+// Import the DatabaseProviderFactory correctly
+import DatabaseProviderFactory from '@src/infrastructure/persistence/DatabaseProvider';
 
 const metricsMiddleware = promBundle({
     includeMethod: true,
@@ -27,18 +28,33 @@ const metricsMiddleware = promBundle({
 export default class App {
     private app: Application;
     private port: number;
-    private database: DatabaseInterface;
+    private database: DatabaseInterface | null;
     private logger: Logger;
+    private redisClient: RedisClientType;
 
-    constructor(database: DatabaseInterface, logger: Logger) {
-
+    constructor(logger: Logger) {
         this.app = express();
         this.port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
-        this.database = database;
         this.logger = logger;
 
+        // Initialize database and Redis internally
+        this.database = null;  // Set default to null
+        this.redisClient = createClient();  // Initialize Redis client
+
+        this.initializeDatabase();
         this.initializeMiddlewares();
         this.initializeRoutes();
+    }
+
+    private initializeDatabase() {
+        // Initialize the database if needed (you can modify this according to your actual DB initialization logic)
+        if (process.env.DB_URI) {
+            // Use the DatabaseProviderFactory correctly
+            this.database = DatabaseProviderFactory.createInstance();
+            this.logger.info('Database connection initialized');
+        } else {
+            this.logger.warn('Database URI is not provided, skipping database initialization');
+        }
     }
 
     private initializeMiddlewares() {
@@ -47,29 +63,27 @@ export default class App {
         this.app.use(metricsMiddleware);
         this.app.get('/metrics', metricsMiddleware.metricsMiddleware);
 
-        // Initialize Redis client and store
-        const redisClient = createClient();
-        redisClient.connect().catch((err) => this.logger.error('Redis connection error', err));
+        if (this.redisClient) {
+            const redisStore = new RedisStore({
+                client: this.redisClient,
+                prefix: 'myapp:',
+            });
 
-        const redisStore = new RedisStore({
-            client: redisClient,
-            prefix: 'myapp:',
-        });
-
-        this.app.use(
-            session({
-                store: redisStore,
-                resave: false,
-                saveUninitialized: false,
-                secret: 'secret',
-                cookie: {
-                    maxAge: 1000 * 60 * 60 * 24 * 365 * 10, // 10 years
-                    httpOnly: true,
-                    sameSite: 'lax',
-                    secure: false,
-                },
-            })
-        );
+            this.app.use(
+                session({
+                    store: redisStore,
+                    resave: false,
+                    saveUninitialized: false,
+                    secret: process.env.SESSION_SECRET || 'defaultSecret',
+                    cookie: {
+                        maxAge: 1000 * 60 * 60 * 24 * 365 * 10,
+                        httpOnly: true,
+                        sameSite: 'lax',
+                        secure: process.env.NODE_ENV === 'production',
+                    },
+                })
+            );
+        }
 
         this.logger.info('Middlewares initialized');
     }
@@ -86,7 +100,6 @@ export default class App {
     private validateEnvVariables() {
         const requiredEnvVariables = [
             'JWT_SECRET',
-            'DB_URI',
             'PORT',
             'MINIO_SERVER',
             'MINIO_USER',
@@ -101,33 +114,64 @@ export default class App {
             );
         }
     }
+
     public async start() {
         this.validateEnvVariables();
-        // Access the database connection string from the environment variables
-        const databaseUrl = process.env.DB_URI;
 
-        // Check if the environment variable is defined
-        if (!databaseUrl) {
-            console.error('DB_URI is not defined. Please set the environment variable.');
-            process.exit(1); // Exit the process if DB_URI is missing
+        if (this.database) {
+            try {
+                await this.database.connect();
+                this.logger.info('Database connected successfully');
+            } catch (error) {
+                this.logger.error('Failed to connect to the database:', error);
+                process.exit(1);
+            }
         }
 
-        // Log the database connection string for debugging purposes
-        console.log('Database connection string:', databaseUrl);
+        // Initialize Redis connection
+        this.redisClient.connect().catch((err) => {
+            this.logger.error('Redis connection error:', err);
+        });
 
-        try {
-            // Attempt to connect to the database
-            await this.database.connect();
-            this.logger.info('Database connected successfully');
+        const server = this.app.listen(this.port, () => {
+            this.logger.info(`Server is running on port ${this.port}`);
+        });
 
-            // Start the server and listen on the specified port
-            this.app.listen(this.port, () => {
-                this.logger.info(`Server is running on port ${this.port}`);
+        // Handle graceful shutdown
+        process.on('SIGTERM', async () => {
+            this.logger.info('Received SIGTERM, shutting down gracefully...');
+            await this.gracefulShutdown();
+            server.close(() => {
+                this.logger.info('Server closed.');
+                process.exit(0);
             });
+        });
+
+        process.on('SIGINT', async () => {
+            this.logger.info('Received SIGINT, shutting down gracefully...');
+            await this.gracefulShutdown();
+            server.close(() => {
+                this.logger.info('Server closed.');
+                process.exit(0);
+            });
+        });
+    }
+
+    private async gracefulShutdown() {
+        try {
+            if (this.redisClient) {
+                this.logger.info('Closing Redis connection...');
+                await this.redisClient.quit();
+                this.logger.info('Redis connection closed.');
+            }
+
+            if (this.database) {
+                this.logger.info('Disconnecting from the database...');
+                await this.database.disconnect();
+                this.logger.info('Database disconnected.');
+            }
         } catch (error) {
-            // Log any errors that occur during the startup process
-            this.logger.error('Failed to connect to the database:', error);
+            this.logger.error('Error during shutdown:', error);
         }
     }
 }
-
