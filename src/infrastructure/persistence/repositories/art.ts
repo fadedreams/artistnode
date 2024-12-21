@@ -9,39 +9,28 @@ export class ArtRepository {
         this.logger = logger;
     }
 
-    // Create Art
     async createArt(artData: CreateArtDTO) {
-        const existingArt = await ArtModel.findOne({ title: artData.title });
-        if (existingArt) {
-            this.logger.error('Art already exists:', artData.title); // Log error if art exists
-            return { error: 'Art already exists!' };
+        try {
+            const existingArt = await ArtModel.findOne({ title: artData.title }).lean();
+            if (existingArt) {
+                throw new Error('Art already exists');
+            }
+            const art = new ArtModel(artData);
+            await art.save();
+            return art;
+        } catch (error) {
+            this.logger.error('Error creating art:', error);
+            throw error;
         }
-        const art = new ArtModel(artData);
-        await art.save();
-        this.logger.info('Art created:', artData.title); // Log success message
-        return art;
     }
 
-    // Update Art
     async updateArt(artId: string, artData: UpdateArtDTO) {
         try {
             const updatedArt = await ArtModel.findByIdAndUpdate(artId, artData, { new: true });
-
-            if (!updatedArt) {
-                this.logger.error('Art not found:', artId);
-                return { success: false, updatedArt: null };  // Return null when not found
-            }
-
-            this.logger.info('Art updated:', artId);
-            return { success: true, updatedArt };
-        } catch (error: unknown) {
-            if (error instanceof Error) {
-                this.logger.error('Error updating art:', error.message);
-            } else {
-                this.logger.error('Unknown error updating art');
-            }
-
-            return { success: false, updatedArt: null };
+            return updatedArt;
+        } catch (error) {
+            this.logger.error('Error updating art:', error);
+            throw error;
         }
     }
 

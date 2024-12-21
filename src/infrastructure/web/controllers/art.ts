@@ -21,7 +21,6 @@ export default class ArtController {
     private storage = multer.memoryStorage();
     private upload = multer({ storage: this.storage });
 
-    // Create Art
     createArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             this.upload.single('file')(req, res, async (err: any) => {
@@ -31,44 +30,13 @@ export default class ArtController {
                 }
 
                 const { file, body } = req;
-                const {
-                    title,
-                    director,
-                    releaseDate,
-                    status,
-                    type,
-                    artcats,
-                    tags,
-                    artists,
-                    writers,
-                    poster,
-                } = body;
-
-                const newArt = {
-                    title,
-                    director,
-                    releaseDate,
-                    status,
-                    type,
-                    artcats,
-                    tags,
-                    artists,
-                    writers,
-                    poster,
-                };
+                const newArt: CreateArtDTO = { ...body };
 
                 if (file) {
                     const fileName = Date.now() + '-' + file.originalname;
-                    const fileBuffer = file.buffer;
-
                     try {
-                        // Upload file to MinIO
-                        await minioClient.putObject('art', fileName, fileBuffer);
-                        // Set the poster with the MinIO file details
-                        newArt.poster = {
-                            url: `https://${process.env.MINIO_SERVER}/art/${fileName}`,
-                            fileName
-                        };
+                        await minioClient.putObject('art', fileName, file.buffer);
+                        newArt.poster = { url: `https://${process.env.MINIO_SERVER}/art/${fileName}`, fileName };
                     } catch (minioError) {
                         this.logger.error('Failed to upload file to MinIO', minioError);
                         return res.status(500).json({ error: 'Failed to upload file to MinIO' });
@@ -76,67 +44,27 @@ export default class ArtController {
                 }
 
                 const createdArt = await this.artUseCase.createArt(newArt);
-                this.logger.info('Art created successfully', { createdArt });
-
-                return res.status(201).json({
-                    id: createdArt._id,
-                    title: createdArt.title,
-                    // Include other fields as needed in the response
-                });
+                return res.status(201).json(createdArt);
             });
         } catch (error) {
-            this.logger.error('Error creating art:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error creating art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
-    // Update Art
     updateArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
-            const { name, about, gender, file } = req.body;
+            const artData: UpdateArtDTO = req.body;
 
-            const artData = { name, about, gender };
-
-            const result = await this.artUseCase.updateArt(id, artData);
-
-            if (result instanceof Error) {
-                this.logger.error('Error updating art:', result.message);
-                return res.status(400).json({ error: result.message });
+            const updatedArt = await this.artUseCase.updateArt(id, artData);
+            if (!updatedArt) {
+                return res.status(404).json({ error: 'Art not found' });
             }
 
-            if (!result) {
-                this.logger.error('Error updating art: No art found', { id });
-                return res.status(404).json({ message: `No art with id: ${id}` });
-            }
-
-            const updatedArt = result;
-
-            if (file) {
-                const fileName = Date.now() + '-' + file.originalname;
-                const fileBuffer = file.buffer;
-
-                try {
-                    // Upload file to MinIO
-                    await minioClient.putObject('art', fileName, fileBuffer);
-
-                    if (updatedArt) {
-                        updatedArt.poster = {
-                            url: `https://${process.env.MINIO_SERVER}/art/${fileName}`,
-                            fileName
-                        };
-                    }
-
-                } catch (minioError) {
-                    this.logger.error('Failed to upload file to MinIO', minioError);
-                    return res.status(500).json({ error: 'Failed to upload file to MinIO' });
-                }
-            }
-
-            this.logger.info('Art updated successfully', { updatedArt });
             return res.status(200).json(updatedArt);
         } catch (error) {
-            this.logger.error('Error updating art:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error updating art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };

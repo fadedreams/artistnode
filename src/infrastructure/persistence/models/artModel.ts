@@ -1,4 +1,17 @@
 import mongoose, { Schema } from 'mongoose';
+
+const replacer = (key: string, value: any) => {
+    if (typeof value === 'object' && value !== null) {
+        const descriptor = Object.getOwnPropertyDescriptor(value, 'toPrimitive');
+        if (descriptor && typeof descriptor.value === 'function') {
+            const newValue = { ...value };
+            delete newValue.toPrimitive;
+            return newValue;
+        }
+    }
+    return value;
+};
+
 const artSchema = new Schema(
     {
         title: {
@@ -58,8 +71,8 @@ const artSchema = new Schema(
     { timestamps: true }
 );
 
+const serializedSchema = JSON.stringify(artSchema, replacer);
+
 const Art = mongoose.model("Art", artSchema);
 
 export default Art;
-
-

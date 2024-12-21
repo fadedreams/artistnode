@@ -11,35 +11,21 @@ export class ArtUseCase {
         this.logger = logger;
     }
 
-    // Create Art
-    async createArt(artData: any) {  // Replace CreateArtDTO with 'any' or appropriate type
+    async createArt(artData: CreateArtDTO) {
         try {
-            const art = await this.artRepository.createArt(artData);
-            return { success: true, art };
-        } catch (error: unknown) {
-            this.logger.error('Error creating art:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+            return await this.artRepository.createArt(artData);
+        } catch (error) {
+            this.logger.error('Error creating art:', error);
+            throw error;
         }
     }
 
-    // Update Art
-    // async updateArt(artId: string, artData: any): Promise<IArt | Error | null> {
-    async updateArt(artId: string, artData: any): Promise<ArtUpdateResult> {
+    async updateArt(artId: string, artData: UpdateArtDTO) {
         try {
-            // Call the repository method
-            const response: UpdatedArtResponse = await this.artRepository.updateArt(artId, artData);
-
-            // Check if the response indicates a successful update
-            if (!response.success || !response.updatedArt) {
-                this.logger.error('Art not found or update failed:', { artId });
-                return null; // No art found or update unsuccessful
-            }
-
-            // Return the updated art
-            return response.updatedArt;
-        } catch (error: unknown) {
-            this.logger.error('Error updating art:', error instanceof Error ? error.message : 'Unknown error');
-            return new Error('An unknown error occurred');
+            return await this.artRepository.updateArt(artId, artData);
+        } catch (error) {
+            this.logger.error('Error updating art:', error);
+            throw error;
         }
     }
 
