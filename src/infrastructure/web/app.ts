@@ -20,6 +20,9 @@ import { Logger } from 'winston';
 // Import the DatabaseProviderFactory correctly
 import DatabaseProviderFactory from '@src/infrastructure/persistence/DatabaseProvider';
 
+// Import the circuit breaker library
+import CircuitBreaker from 'opossum';
+
 const metricsMiddleware = promBundle({
     includeMethod: true,
     includePath: true,
@@ -31,6 +34,8 @@ export default class App {
     private database: DatabaseInterface | null;
     private logger: Logger;
     private redisClient: RedisClientType;
+    private redisCircuitBreaker: CircuitBreaker;
+    private dbCircuitBreaker: CircuitBreaker;
 
     constructor(logger: Logger) {
         this.app = express();
@@ -41,17 +46,45 @@ export default class App {
         this.database = null;  // Set default to null
         this.redisClient = createClient();  // Initialize Redis client
 
-        this.initializeDatabase();
+        // Initialize circuit breakers
+        this.redisCircuitBreaker = new CircuitBreaker(() => this.connectRedis(), {
+            timeout: 5000, // Timeout after 5 seconds
+            errorThresholdPercentage: 50, // Open the circuit after 50% failures
+            resetTimeout: 30000, // Reset circuit after 30 seconds
+        });
+
+        this.dbCircuitBreaker = new CircuitBreaker(() => this.initializeDatabase(), {
+            timeout: 5000, // Timeout after 5 seconds
+            errorThresholdPercentage: 50, // Open the circuit after 50% failures
+            resetTimeout: 30000, // Reset circuit after 30 seconds
+        });
+
         this.initializeMiddlewares();
         this.initializeRoutes();
     }
 
-    private initializeDatabase() {
-        // Initialize the database if needed (you can modify this according to your actual DB initialization logic)
+    private async connectRedis() {
+        // Ensure this returns a Promise to handle the Redis connection asynchronously
+        try {
+            await this.redisClient.connect();
+            this.logger.info('Redis connected successfully');
+        } catch (error) {
+            this.logger.error('Failed to connect to Redis:', error);
+            throw error; // Circuit breaker will handle this error
+        }
+    }
+
+    private async initializeDatabase() {
+        // Ensure this returns a Promise for database connection initialization
         if (process.env.DB_URI) {
-            // Use the DatabaseProviderFactory correctly
-            this.database = DatabaseProviderFactory.createInstance();
-            this.logger.info('Database connection initialized');
+            try {
+                this.database = DatabaseProviderFactory.createInstance();
+                await this.database.connect(); // Assuming this.connect() returns a Promise
+                this.logger.info('Database connection initialized');
+            } catch (error) {
+                this.logger.error('Failed to connect to the database:', error);
+                throw error; // Circuit breaker will handle this error
+            }
         } else {
             this.logger.warn('Database URI is not provided, skipping database initialization');
         }
@@ -120,7 +153,8 @@ export default class App {
 
         if (this.database) {
             try {
-                await this.database.connect();
+                // Wrap the database connection in the circuit breaker
+                await this.dbCircuitBreaker.fire();
                 this.logger.info('Database connected successfully');
             } catch (error) {
                 this.logger.error('Failed to connect to the database:', error);
@@ -128,10 +162,12 @@ export default class App {
             }
         }
 
-        // Initialize Redis connection
-        this.redisClient.connect().catch((err) => {
+        // Initialize Redis connection wrapped with the circuit breaker
+        try {
+            await this.redisCircuitBreaker.fire();
+        } catch (err) {
             this.logger.error('Redis connection error:', err);
-        });
+        }
 
         const server = this.app.listen(this.port, () => {
             this.logger.info(`Server is running on port ${this.port}`);
