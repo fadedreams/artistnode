@@ -16,30 +16,29 @@ export class UserController {
         this.userUseCase = new UserUseCase(userRepository, this.logger);
     }
 
-    public create = async (req: Request, res: Response) => {
+    public create = async (req: Request, res: Response): Promise<Response> => {
         const userData: UserDTO = req.body;
 
         try {
             this.logger.info('UserController: Received request to create user', { email: userData.email });
             const user = await this.userUseCase.createUser(userData);
-            res.status(201).json(user);
+            return res.status(201).json(user); // Return the response
         } catch (error: unknown) {
             this.logger.error('UserController: Error creating user', { error });
-            res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+            return res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' }); // Return the response
         }
     };
 
-    public signIn = async (req: Request, res: Response) => {
+    public signIn = async (req: Request, res: Response): Promise<Response> => {
         const signInData: SignInDTO = req.body;
 
         try {
             this.logger.info('UserController: Received request to sign in user', { email: signInData.email });
             const user = await this.userUseCase.signInUser(signInData);
-            res.status(200).json(user);
+            return res.status(200).json(user); // Return the response
         } catch (error: unknown) {
             this.logger.error('UserController: Error signing in user', { error });
-            res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+            return res.status(400).json({ error: error instanceof Error ? error.message : 'Unknown error' }); // Return the response
         }
     };
 }
-
