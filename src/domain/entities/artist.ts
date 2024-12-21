@@ -2,8 +2,8 @@ import { Document, ObjectId } from 'mongoose';
 
 // Define the Avatar interface
 export interface ArtistAvatar {
-    url: string;
-    public_id: string;
+    url?: string;
+    public_id?: string;
 }
 
 // Define the IArtist interface based on the structure of the artist document
@@ -30,6 +30,8 @@ export interface CreateArtistResponseFailure {
 }
 
 export interface CreateArtistResponseError {
+    success?: null;
+    artist?: null;   // Error message if creation fails
     error?: string;   // Just an error response with no success flag
 }
 

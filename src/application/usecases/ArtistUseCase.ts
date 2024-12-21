@@ -22,32 +22,36 @@ export class ArtistUseCase {
         this.logger = logger;
     }
 
-    async createArtist(artistData: CreateArtistDTO): Promise<{ success: boolean; artist?: IArtist; error?: string }> {
+    // Create Artist - Response type adjusted
+    async createArtist(artistData: CreateArtistDTO): Promise<CreateArtistResponse> {
         try {
             const artist = await this.artistRepository.createArtist(artistData);
             if ('error' in artist) {
                 return { success: false, error: artist.error };
             }
-            return { success: true, artist };
+            // return { success: true, artist };
+            return artist;
         } catch (error: unknown) {
             this.logger.error('Error creating artist:', error instanceof Error ? error.message : 'Unknown error');
             return { success: false, error: 'An unknown error occurred' };
         }
     }
 
-    async updateArtist(artistId: string, artistData: UpdateArtistDTO): Promise<{ success: boolean; updatedArtist?: IArtist; error?: string }> {
+    // Update Artist - Response type adjusted
+    async updateArtist(artistId: string, artistData: UpdateArtistDTO): Promise<UpdateArtistResponse> {
         try {
             const updatedArtist = await this.artistRepository.updateArtist(artistId, artistData);
             if (!updatedArtist) {
                 return { success: false, error: 'Artist not found' };
             }
-            return { success: true, updatedArtist };
+            return updatedArtist;
         } catch (error: unknown) {
             this.logger.error('Error updating artist:', error instanceof Error ? error.message : 'Unknown error');
             return { success: false, error: 'An unknown error occurred' };
         }
     }
 
+    // Remove Artist - Response type adjusted
     async removeArtist(artistId: string): Promise<{ success: boolean; message?: string; error?: string }> {
         try {
             const result = await this.artistRepository.removeArtist(artistId);
@@ -61,27 +65,30 @@ export class ArtistUseCase {
         }
     }
 
-    async searchArtist(query: SearchArtistDTO): Promise<{ success: boolean; artists?: IArtist[]; error?: string }> {
+    // Search Artist - Return type adjusted
+    async searchArtist(query: SearchArtistDTO): Promise<SearchArtistResponse> {
         try {
             const artists = await this.artistRepository.searchArtist(query);
-            return { success: true, artists };
+            return artists;
         } catch (error: unknown) {
             this.logger.error('Error searching artists:', error instanceof Error ? error.message : 'Unknown error');
             return { success: false, error: 'An unknown error occurred' };
         }
     }
 
-    async getLatestArtist(): Promise<{ success: boolean; latestArtists?: IArtist[]; error?: string }> {
+    // Get Latest Artists - Return type adjusted
+    async getLatestArtist(): Promise<GetArtistsResponse> {
         try {
             const latestArtists = await this.artistRepository.getLatestArtist();
-            return { success: true, latestArtists };
+            return latestArtists;
         } catch (error: unknown) {
             this.logger.error('Error fetching latest artists:', error instanceof Error ? error.message : 'Unknown error');
             return { success: false, error: 'An unknown error occurred' };
         }
     }
 
-    async getSingleArtist(artistId: string): Promise<{ success: boolean; artist?: IArtist; error?: string }> {
+    // Get Single Artist - Return type adjusted
+    async getSingleArtist(artistId: string): Promise<GetSingleArtistResponse> {
         try {
             const artist = await this.artistRepository.getSingleArtist(artistId);
             if (!artist) {
@@ -94,10 +101,11 @@ export class ArtistUseCase {
         }
     }
 
-    async getActors(): Promise<{ success: boolean; actors?: IArtist[]; error?: string }> {
+    // Get Actors - Return type adjusted
+    async getActors(): Promise<GetArtistsResponse> {
         try {
             const actors = await this.artistRepository.getActors();
-            return { success: true, actors };
+            return actors;
         } catch (error: unknown) {
             this.logger.error('Error fetching actors:', error instanceof Error ? error.message : 'Unknown error');
             return { success: false, error: 'An unknown error occurred' };
