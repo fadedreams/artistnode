@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { Document } from 'mongoose';
+import { Document, ObjectId } from 'mongoose';
 
 export interface IReview extends Document {
     owner?: mongoose.Types.ObjectId;  // Refers to the User model
@@ -30,16 +30,18 @@ export interface SearchReviewDTO {
 
 
 export interface ReviewData {
+    _id?: mongoose.Types.ObjectId; // Use mongoose.Types.ObjectId here
     owner?: mongoose.Types.ObjectId;
     parentArt?: mongoose.Types.ObjectId;
     content?: string;
     rating?: number;
 }
 
-export type CreateReviewResponse = { success?: boolean, review?: ReviewData, error?: string } | { success?: boolean, error?: string };
+export type CreateReviewResponse = { success?: boolean, review?: ReviewData, error?: string } | { success?: boolean, review?: null, error?: string };
+
 export type UpdatedReviewResponse = {
     success?: boolean,
-    updatedReview?: ReviewData, // Add this line to include updatedReview
+    updatedReview?: ReviewData,
     error?: string
 } | {
     success?: boolean,

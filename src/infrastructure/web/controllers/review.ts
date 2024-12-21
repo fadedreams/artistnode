@@ -7,7 +7,7 @@ import { ReviewUseCase } from '@src/application/usecases/ReviewUseCase';
 import { ReviewRepository } from '@src/infrastructure/persistence/repositories/review';
 
 import { Router, Request, Response, NextFunction } from 'express';
-import { CreateReviewDTO, UpdateReviewDTO, IReview, UpdatedReviewResponse } from '@src/domain/entities/review';
+import { CreateReviewDTO, UpdateReviewDTO, IReview, ReviewData, UpdatedReviewResponse } from '@src/domain/entities/review';
 
 export default class ReviewController {
     private reviewUseCase: ReviewUseCase;
