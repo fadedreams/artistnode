@@ -61,13 +61,14 @@ export class ArtUseCase {
         }
     }
 
-    async getSingleArt(artId: string): Promise<GetSingleArtResponse> {
+
+    async getSingleArt(artId: string): Promise<GetArtResponse> {
         try {
             const art = await this.artRepository.getSingleArt(artId);
             if (!art) {
                 return { success: false, error: 'Art not found' };
             }
-            return { success: true, art };
+            return { success: true, arts: [art] };  // Wrap the single art in an array to match the GetArtResponse structure
         } catch (error) {
             this.logger.error('Error fetching art by ID:', error);
             return { success: false, error: 'Error fetching art by ID' };

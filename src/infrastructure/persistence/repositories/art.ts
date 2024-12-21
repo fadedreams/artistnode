@@ -9,6 +9,26 @@ export class ArtRepository {
         this.logger = logger;
     }
 
+    private transformArtDoc(artDoc: any): IArt {
+        // Convert the MongoDB document to IArt, handling the _id field
+        return {
+            _id: artDoc._id.toString(),  // Convert ObjectId to string
+            title: artDoc.title,
+            director: artDoc.director,
+            releaseDate: artDoc.releaseDate,
+            status: artDoc.status,
+            type: artDoc.type,
+            artcats: artDoc.artcats,
+            tags: artDoc.tags,
+            artists: artDoc.artists,
+            writers: artDoc.writers,
+            poster: artDoc.poster,
+            reviews: artDoc.reviews,
+            createdAt: artDoc.createdAt,
+            updatedAt: artDoc.updatedAt,
+        };
+    }
+
     async createArt(artData: CreateArtDTO): Promise<IArt> {
         try {
             const existingArt = await ArtModel.findOne({ title: artData.title }).lean();
@@ -17,7 +37,7 @@ export class ArtRepository {
             }
             const art = new ArtModel(artData);
             await art.save();
-            return art;
+            return this.transformArtDoc(art);  // Transform the document to IArt
         } catch (error) {
             this.logger.error('Error creating art:', error);
             throw error;
@@ -26,8 +46,8 @@ export class ArtRepository {
 
     async updateArt(artId: string, artData: UpdateArtDTO): Promise<IArt | null> {
         try {
-            const updatedArt = await ArtModel.findByIdAndUpdate(artId, artData, { new: true });
-            return updatedArt;
+            const updatedArt = await ArtModel.findByIdAndUpdate(artId, artData, { new: true }).lean();
+            return updatedArt ? this.transformArtDoc(updatedArt) : null;  // Transform the document
         } catch (error) {
             this.logger.error('Error updating art:', error);
             throw error;
@@ -50,29 +70,29 @@ export class ArtRepository {
             ...(title && { title: new RegExp(title, 'i') }),
             ...(artist && { artists: new RegExp(artist, 'i') }),
             ...(genre && { genre }),
-        });
+        }).lean();
         this.logger.info('Search for arts completed');
-        return arts;
+        return arts.map(this.transformArtDoc);  // Map to IArt
     }
 
     async getLatestArt(): Promise<IArt[]> {
-        const latestArts = await ArtModel.find().sort({ createdAt: -1 }).limit(10);
+        const latestArts = await ArtModel.find().sort({ createdAt: -1 }).limit(10).lean();
         this.logger.info('Fetched latest arts');
-        return latestArts;
+        return latestArts.map(this.transformArtDoc);  // Map to IArt
     }
 
     async getSingleArt(artId: string): Promise<IArt | null> {
-        const art = await ArtModel.findById(artId);
+        const art = await ArtModel.findById(artId).lean();
         if (!art) {
             this.logger.error('Art not found:', artId);
         }
-        return art;
+        return art ? this.transformArtDoc(art) : null;  // Transform the document
     }
 
     async getArt(pageNo: number, limit: number): Promise<IArt[]> {
         const skip = (pageNo - 1) * limit;
-        const arts = await ArtModel.find().skip(skip).limit(limit);
+        const arts = await ArtModel.find().skip(skip).limit(limit).lean();
         this.logger.info('Fetched paginated arts');
-        return arts;
+        return arts.map(this.transformArtDoc);  // Map to IArt
     }
 }

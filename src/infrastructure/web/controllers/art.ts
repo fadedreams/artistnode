@@ -126,13 +126,17 @@ export default class ArtController {
     getSingleArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
-            const art = await this.artUseCase.getSingleArt(id);
+            const artResponse = await this.artUseCase.getSingleArt(id);
 
-            if (art.error) {
-                return res.status(404).json({ message: art.error });
+            if (artResponse.error) {
+                return res.status(404).json({ message: artResponse.error });
             }
 
-            return res.status(200).json(art.art);
+            if (artResponse.arts && artResponse.arts.length > 0) {
+                return res.status(200).json(artResponse.arts[0]); // Return the first art object from the arts array
+            }
+
+            return res.status(404).json({ message: 'Art not found' }); // Handle case if no art is found
         } catch (error) {
             this.logger.error('Error fetching art by ID:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });

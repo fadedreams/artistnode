@@ -16,7 +16,7 @@ export interface CreateArtDTO {
 }
 
 export interface CreateArtResponse {
-    success: boolean;
+    success?: boolean;
     art?: IArt;
     error?: string;
 }
