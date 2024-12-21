@@ -1,17 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
 
-const replacer = (key: string, value: any) => {
-    if (typeof value === 'object' && value !== null) {
-        const descriptor = Object.getOwnPropertyDescriptor(value, 'toPrimitive');
-        if (descriptor && typeof descriptor.value === 'function') {
-            const newValue = { ...value };
-            delete newValue.toPrimitive;
-            return newValue;
-        }
-    }
-    return value;
-};
-
 const artSchema = new Schema(
     {
         title: {
@@ -39,7 +27,6 @@ const artSchema = new Schema(
         artcats: {
             type: [String],
             required: true,
-            //enum: artcats,
         },
         tags: {
             type: [String],
@@ -68,11 +55,19 @@ const artSchema = new Schema(
         },
         reviews: [{ type: mongoose.Schema.Types.ObjectId, ref: "Review" }],
     },
-    { timestamps: true }
+    {
+        timestamps: true,
+        toJSON: {
+            transform: (doc, ret) => {
+                // Remove Mongoose internal properties that can't be serialized
+                delete ret._id;  // _id is a special field in Mongoose documents
+                delete ret.__v;   // __v is the version key Mongoose adds by default
+                delete ret.toPrimitive;  // Ensure to delete toPrimitive if it exists
+                return ret;
+            },
+        },
+    }
 );
 
-const serializedSchema = JSON.stringify(artSchema, replacer);
-
 const Art = mongoose.model("Art", artSchema);
-
 export default Art;

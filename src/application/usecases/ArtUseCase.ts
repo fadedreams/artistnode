@@ -1,6 +1,6 @@
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
 import { Logger } from 'winston';
-import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, IArt, UpdatedArtResponse, ArtUpdateResult } from '@src/domain/entities/art';
+import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, IArt, CreateArtResponse, UpdatedArtResponse, SearchArtResponse, GetLatestArtResponse, GetArtResponse } from '@src/domain/entities/art';
 
 export class ArtUseCase {
     private artRepository: ArtRepository;
@@ -11,77 +11,76 @@ export class ArtUseCase {
         this.logger = logger;
     }
 
-    async createArt(artData: CreateArtDTO) {
+    async createArt(artData: CreateArtDTO): Promise<CreateArtResponse> {
         try {
-            return await this.artRepository.createArt(artData);
+            const createdArt = await this.artRepository.createArt(artData);
+            return { success: true, art: createdArt };
         } catch (error) {
             this.logger.error('Error creating art:', error);
-            throw error;
+            return { success: false, error: 'Error creating art' };
         }
     }
 
-    async updateArt(artId: string, artData: UpdateArtDTO) {
+    async updateArt(artId: string, artData: UpdateArtDTO): Promise<UpdatedArtResponse> {
         try {
-            return await this.artRepository.updateArt(artId, artData);
+            const updatedArt = await this.artRepository.updateArt(artId, artData);
+            return { success: true, updatedArt };
         } catch (error) {
             this.logger.error('Error updating art:', error);
-            throw error;
+            return { success: false, error: 'Error updating art' };
         }
     }
 
-    // Remove Art
-    async removeArt(artId: string) {
+    async removeArt(artId: string): Promise<{ success: boolean; message?: string; error?: string }> {
         try {
             const result = await this.artRepository.removeArt(artId);
-            return { success: true, message: 'Art removed successfully', result };
-        } catch (error: unknown) {
-            this.logger.error('Error removing art:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+            return { success: true, message: result.message };
+        } catch (error) {
+            this.logger.error('Error removing art:', error);
+            return { success: false, error: 'Error removing art' };
         }
     }
 
-    // Search Art
-    async searchArt(query: any) {  // Replace SearchArtDTO with 'any' or appropriate type
+    async searchArt(query: SearchArtDTO): Promise<SearchArtResponse> {
         try {
             const arts = await this.artRepository.searchArt(query);
             return { success: true, arts };
-        } catch (error: unknown) {
-            this.logger.error('Error searching art:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+        } catch (error) {
+            this.logger.error('Error searching art:', error);
+            return { success: false, error: 'Error searching art' };
         }
     }
 
-    // Get Latest Art
-    async getLatestArt() {
+    async getLatestArt(): Promise<GetLatestArtResponse> {
         try {
             const latestArts = await this.artRepository.getLatestArt();
             return { success: true, latestArts };
-        } catch (error: unknown) {
-            this.logger.error('Error fetching latest art:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+        } catch (error) {
+            this.logger.error('Error fetching latest art:', error);
+            return { success: false, error: 'Error fetching latest art' };
         }
     }
 
-    // Get Single Art by ID
-    async getSingleArt(artId: string) {
+    async getSingleArt(artId: string): Promise<GetSingleArtResponse> {
         try {
             const art = await this.artRepository.getSingleArt(artId);
+            if (!art) {
+                return { success: false, error: 'Art not found' };
+            }
             return { success: true, art };
-        } catch (error: unknown) {
-            this.logger.error('Error fetching art by ID:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+        } catch (error) {
+            this.logger.error('Error fetching art by ID:', error);
+            return { success: false, error: 'Error fetching art by ID' };
         }
     }
 
-    // Get Arts with Pagination
-    async getArt(pageNo: number, limit: number) {
+    async getArt(pageNo: number, limit: number): Promise<GetArtResponse> {
         try {
             const arts = await this.artRepository.getArt(pageNo, limit);
             return { success: true, arts };
-        } catch (error: unknown) {
-            this.logger.error('Error fetching art:', error instanceof Error ? error.message : 'Unknown error');
-            return { error: 'An unknown error occurred' };
+        } catch (error) {
+            this.logger.error('Error fetching art:', error);
+            return { success: false, error: 'Error fetching art' };
         }
     }
 }
-

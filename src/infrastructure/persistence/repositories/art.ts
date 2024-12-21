@@ -9,7 +9,7 @@ export class ArtRepository {
         this.logger = logger;
     }
 
-    async createArt(artData: CreateArtDTO) {
+    async createArt(artData: CreateArtDTO): Promise<IArt> {
         try {
             const existingArt = await ArtModel.findOne({ title: artData.title }).lean();
             if (existingArt) {
@@ -24,7 +24,7 @@ export class ArtRepository {
         }
     }
 
-    async updateArt(artId: string, artData: UpdateArtDTO) {
+    async updateArt(artId: string, artData: UpdateArtDTO): Promise<IArt | null> {
         try {
             const updatedArt = await ArtModel.findByIdAndUpdate(artId, artData, { new: true });
             return updatedArt;
@@ -34,51 +34,45 @@ export class ArtRepository {
         }
     }
 
-    // Remove Art
-    async removeArt(artId: string) {
+    async removeArt(artId: string): Promise<{ message: string }> {
         const result = await ArtModel.findByIdAndDelete(artId);
         if (!result) {
-            this.logger.error('Art not found for removal:', artId); // Log error if art not found
-            return { error: 'Art not found' };
+            this.logger.error('Art not found for removal:', artId);
+            throw new Error('Art not found');
         }
-        this.logger.info('Art removed:', artId); // Log success message
+        this.logger.info('Art removed:', artId);
         return { message: 'Art removed successfully' };
     }
 
-    // Search Arts by Title or other criteria
-    async searchArt(query: SearchArtDTO) {
+    async searchArt(query: SearchArtDTO): Promise<IArt[]> {
         const { title, artist, genre } = query;
         const arts = await ArtModel.find({
             ...(title && { title: new RegExp(title, 'i') }),
             ...(artist && { artists: new RegExp(artist, 'i') }),
             ...(genre && { genre }),
         });
-        this.logger.info('Search for arts completed'); // Log search completion
+        this.logger.info('Search for arts completed');
         return arts;
     }
 
-    // Get Latest Arts
-    async getLatestArt() {
+    async getLatestArt(): Promise<IArt[]> {
         const latestArts = await ArtModel.find().sort({ createdAt: -1 }).limit(10);
-        this.logger.info('Fetched latest arts'); // Log fetching latest arts
+        this.logger.info('Fetched latest arts');
         return latestArts;
     }
 
-    // Get Single Art by ID
-    async getSingleArt(artId: string) {
+    async getSingleArt(artId: string): Promise<IArt | null> {
         const art = await ArtModel.findById(artId);
         if (!art) {
-            this.logger.error('Art not found:', artId); // Log error if art not found
+            this.logger.error('Art not found:', artId);
         }
         return art;
     }
 
-    // Get Arts with Pagination
-    async getArt(pageNo: number, limit: number) {
+    async getArt(pageNo: number, limit: number): Promise<IArt[]> {
         const skip = (pageNo - 1) * limit;
         const arts = await ArtModel.find().skip(skip).limit(limit);
-        this.logger.info('Fetched paginated arts'); // Log fetching paginated arts
+        this.logger.info('Fetched paginated arts');
         return arts;
     }
 }
-

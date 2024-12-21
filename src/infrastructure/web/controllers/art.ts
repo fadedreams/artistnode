@@ -4,23 +4,22 @@ import minioClient from '@src/infrastructure/persistence/minioClient';
 import { ArtUseCase } from '@src/application/usecases/ArtUseCase';
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
 import { Logger } from 'winston';
-import { CreateArtDTO, UpdateArtDTO, SearchArtDTO } from '@src/domain/entities/art';
+import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, CreateArtResponse, UpdatedArtResponse, GetLatestArtResponse, GetArtResponse } from '@src/domain/entities/art';
 
 export default class ArtController {
     private artUseCase: ArtUseCase;
     private logger: Logger;
 
-    // Constructor accepting logger and passing it to the use case
     constructor(logger: Logger) {
         const artRepository = new ArtRepository(logger);
         this.artUseCase = new ArtUseCase(artRepository, logger);
         this.logger = logger;
     }
 
-    // Set up multer for file upload handling
     private storage = multer.memoryStorage();
     private upload = multer({ storage: this.storage });
 
+    // Create Art
     createArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             this.upload.single('file')(req, res, async (err: any) => {
@@ -36,15 +35,18 @@ export default class ArtController {
                     const fileName = Date.now() + '-' + file.originalname;
                     try {
                         await minioClient.putObject('art', fileName, file.buffer);
-                        newArt.poster = { url: `https://${process.env.MINIO_SERVER}/art/${fileName}`, fileName };
+                        newArt.poster = { url: `https://${process.env.MINIO_SERVER}/art/${fileName}`, public_id: fileName };
                     } catch (minioError) {
                         this.logger.error('Failed to upload file to MinIO', minioError);
                         return res.status(500).json({ error: 'Failed to upload file to MinIO' });
                     }
                 }
 
-                const createdArt = await this.artUseCase.createArt(newArt);
-                return res.status(201).json(createdArt);
+                const createdArt: CreateArtResponse = await this.artUseCase.createArt(newArt);
+                if (createdArt.error) {
+                    return res.status(400).json({ error: createdArt.error });
+                }
+                return res.status(201).json(createdArt.art);
             });
         } catch (error) {
             this.logger.error('Error creating art:', error);
@@ -52,17 +54,18 @@ export default class ArtController {
         }
     };
 
+    // Update Art
     updateArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const { id } = req.params;
             const artData: UpdateArtDTO = req.body;
 
-            const updatedArt = await this.artUseCase.updateArt(id, artData);
-            if (!updatedArt) {
-                return res.status(404).json({ error: 'Art not found' });
+            const updatedArt: UpdatedArtResponse = await this.artUseCase.updateArt(id, artData);
+            if (updatedArt.error) {
+                return res.status(404).json({ error: updatedArt.error });
             }
 
-            return res.status(200).json(updatedArt);
+            return res.status(200).json(updatedArt.updatedArt);
         } catch (error) {
             this.logger.error('Error updating art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
@@ -75,15 +78,13 @@ export default class ArtController {
             const { id } = req.params;
             const art = await this.artUseCase.removeArt(id);
 
-            if (!art) {
-                this.logger.error('Error removing art: No art found', { id });
-                return res.status(404).json({ message: 'Art not found' });
+            if (art.error) {
+                return res.status(404).json({ message: art.error });
             }
 
-            this.logger.info('Art removed successfully', { id });
             return res.status(200).json({ message: 'Art removed successfully' });
         } catch (error) {
-            this.logger.error('Error removing art:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error removing art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
@@ -91,15 +92,17 @@ export default class ArtController {
     // Search Art
     searchArt = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const { name } = req.query;
-            if (name && name.toString().trim()) {
-                return res.status(400).json({ error: 'Invalid search query' });
+            const { title, artist, genre } = req.query;
+            const searchParams: SearchArtDTO = { title: title?.toString(), artist: artist?.toString(), genre: genre?.toString() };
+
+            const result = await this.artUseCase.searchArt(searchParams);
+            if (result.error) {
+                return res.status(400).json({ error: result.error });
             }
-            const result = await this.artUseCase.searchArt(name);
-            this.logger.info('Art search performed', { name });
-            return res.status(200).json({ art: result });
+
+            return res.status(200).json(result.arts);
         } catch (error) {
-            this.logger.error('Error searching art:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error searching art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
@@ -107,11 +110,14 @@ export default class ArtController {
     // Get Latest Art
     getLatestArt = async (req: Request, res: Response): Promise<Response> => {
         try {
-            const result = await this.artUseCase.getLatestArt();
-            this.logger.info('Latest art fetched');
-            return res.status(200).json({ art: result });
+            const result: GetLatestArtResponse = await this.artUseCase.getLatestArt();
+            if (result.error) {
+                return res.status(400).json({ error: result.error });
+            }
+
+            return res.status(200).json(result.latestArts);
         } catch (error) {
-            this.logger.error('Error fetching latest art:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error fetching latest art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
@@ -122,20 +128,18 @@ export default class ArtController {
             const { id } = req.params;
             const art = await this.artUseCase.getSingleArt(id);
 
-            if (!art) {
-                this.logger.error('Art not found', { id });
-                return res.status(404).json({ message: 'Art not found' });
+            if (art.error) {
+                return res.status(404).json({ message: art.error });
             }
 
-            this.logger.info('Art details fetched', { id });
-            return res.status(200).json({ art });
+            return res.status(200).json(art.art);
         } catch (error) {
-            this.logger.error('Error fetching art by ID:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error fetching art by ID:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
 
-    // Get Art
+    // Get Art with Pagination
     getArt = async (req: Request, res: Response): Promise<Response> => {
         try {
             const pageNo = Number(req.query.pageNo);
@@ -145,12 +149,14 @@ export default class ArtController {
                 return res.status(400).json({ error: 'Invalid pageNo or limit value' });
             }
 
-            const result = await this.artUseCase.getArt(pageNo, limit);
+            const result: GetArtResponse = await this.artUseCase.getArt(pageNo, limit);
+            if (result.error) {
+                return res.status(400).json({ error: result.error });
+            }
 
-            this.logger.info('Fetched paginated art');
-            return res.status(200).json({ art: result });
+            return res.status(200).json(result.arts);
         } catch (error) {
-            this.logger.error('Error fetching art:', error instanceof Error ? error.message : 'Unknown error');
+            this.logger.error('Error fetching art:', error);
             return res.status(400).json({ error: 'An unknown error occurred' });
         }
     };
