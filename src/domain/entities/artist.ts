@@ -85,4 +85,10 @@ export interface GetArtistsResponse {
     error?: string;
 }
 
+export interface GetActorsResponse {
+    success?: boolean;
+    actors?: IArtist[];  // Define 'actors' if this is specifically for actors
+    error?: string;
+}
+
 

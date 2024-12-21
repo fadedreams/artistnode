@@ -10,7 +10,8 @@ import {
     UpdateArtistResponse,
     SearchArtistResponse,
     GetSingleArtistResponse,
-    GetArtistsResponse
+    GetArtistsResponse,
+    GetActorsResponse
 } from '@src/domain/entities/artist';
 
 export class ArtistUseCase {
@@ -102,7 +103,7 @@ export class ArtistUseCase {
     }
 
     // Get Actors - Return type adjusted
-    async getActors(): Promise<GetArtistsResponse> {
+    async getActors(): Promise<GetActorsResponse> {
         try {
             const actors = await this.artistRepository.getActors();
             return actors;

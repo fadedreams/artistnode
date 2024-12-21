@@ -10,7 +10,8 @@ import {
     UpdateArtistResponse,
     SearchArtistResponse,
     GetSingleArtistResponse,
-    GetArtistsResponse
+    GetArtistsResponse,
+    GetActorsResponse
 } from '@src/domain/entities/artist';
 import { Logger } from 'winston';
 
@@ -158,7 +159,7 @@ export class ArtistRepository {
     }
 
     // Get Actors
-    async getActors(): Promise<GetArtistsResponse> {
+    async getActors(): Promise<GetActorsResponse> {
         const actorsDoc = await ArtistModel.find({ gender: 'actor' });
         if (!actorsDoc.length) {
             this.logger.error('No actors found');
@@ -176,6 +177,6 @@ export class ArtistRepository {
             updatedAt: actorDoc.updatedAt,
         }));
 
-        return { success: true, artists: actors };  // Assuming you want to return "artists" here
+        return { success: true, actors: actors };  // Assuming you want to return "artists" here
     }
 }
