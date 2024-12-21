@@ -47,5 +47,5 @@ export type UpdatedReviewResponse = {
     success?: boolean,
     error?: string
 } | {
-    errir?: string
+    error?: string
 };
