@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 
 class Database {
@@ -6,9 +5,6 @@ class Database {
     private maxRetries: number;
     private retryDelay: number;
     private currentRetries: number;
-    private circuitState: 'closed' | 'open' | 'half-open';  // State of the circuit breaker
-    private circuitBreakerCooldown: number;  // Cooldown time in ms
-    private lastFailureTime: number;  // Time of last failure
 
     // Exportable variable to track MongoDB connection status
     public static isConnected: boolean = false; // Initially set to false
@@ -18,13 +14,9 @@ class Database {
         this.maxRetries = 5;
         this.retryDelay = 2000; // Delay between retries (in ms)
         this.currentRetries = 0;
-        this.circuitState = 'closed';  // Initial state of the circuit breaker is 'closed'
-        this.circuitBreakerCooldown = 30000;  // Cooldown for circuit breaker in ms (30 seconds)
-        this.lastFailureTime = 0;  // Initialize time of last failure
         this.connectWithRetry();
     }
 
-    // Function to connect to MongoDB
     private async connect() {
         try {
             console.log('Attempting to connect to MongoDB...');
@@ -32,7 +24,6 @@ class Database {
             console.log('Connected to MongoDB');
             Database.isConnected = true;  // Set the status to true on successful connection
             this.currentRetries = 0; // Reset retry count on successful connection
-            this.circuitState = 'closed';  // Close the circuit on successful connection
         } catch (error: any) {
             console.error('Error connecting to MongoDB:', error.message);
             Database.isConnected = false;  // Set the status to false on failure
@@ -40,40 +31,22 @@ class Database {
         }
     }
 
-    // Function to handle retries and implement the circuit breaker pattern
     private async connectWithRetry() {
-        if (this.circuitState === 'open') {
-            const timeSinceLastFailure = Date.now() - this.lastFailureTime;
-            if (timeSinceLastFailure < this.circuitBreakerCooldown) {
-                console.log(`Circuit is open. Retry cooldown active. Retrying in ${this.circuitBreakerCooldown / 1000} seconds...`);
-                await new Promise(resolve => setTimeout(resolve, this.circuitBreakerCooldown));
-                this.circuitState = 'half-open';  // Half-open to test reconnection
-            } else {
-                console.log('Cooldown period over, retrying connection...');
-                this.circuitState = 'half-open';
-            }
-        }
-
-        // If circuit is closed or half-open, attempt connection
-        if (this.circuitState === 'closed' || this.circuitState === 'half-open') {
+        while (this.currentRetries < this.maxRetries) {
             try {
                 await this.connect();
-                this.currentRetries = 0;  // Reset retries on successful connection
-                this.lastFailureTime = 0; // Reset last failure time on success
+                break; // Exit loop on successful connection
             } catch (error) {
                 this.currentRetries++;
                 console.log(
                     `Retry attempt ${this.currentRetries}/${this.maxRetries} failed. Retrying in ${this.retryDelay / 1000} seconds...`
                 );
                 await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
-
-                // If max retries reached, open the circuit
-                if (this.currentRetries >= this.maxRetries) {
-                    console.error('Max retry attempts reached. Opening the circuit.');
-                    this.circuitState = 'open';  // Open the circuit if retries are exhausted
-                    this.lastFailureTime = Date.now();  // Set the failure time for cooldown
-                }
             }
+        }
+
+        if (this.currentRetries >= this.maxRetries) {
+            console.error('Max retry attempts reached. Unable to connect to MongoDB.');
         }
     }
 
