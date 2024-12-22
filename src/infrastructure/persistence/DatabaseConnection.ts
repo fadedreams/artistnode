@@ -1,4 +1,3 @@
-
 import mongoose from 'mongoose';
 
 class Database {
@@ -13,14 +12,20 @@ class Database {
     // Exportable variable to track MongoDB connection status
     public static isConnected: boolean = false; // Initially set to false
 
-    constructor() {
-        this.databaseUrl = 'mongodb://localhost:27017/artistdb1'; // Your MongoDB URL
-        this.maxRetries = 5;
-        this.retryDelay = 2000; // Delay between retries (in ms)
-        this.currentRetries = 0;
+    // Constructor accepting connection configuration parameters
+    constructor(
+        databaseUrl: string = process.env.DB_URI || 'mongodb://localhost:27017/artistdb1',
+        maxRetries: number = 5,
+        retryDelay: number = 2000, // Delay between retries (in ms)
+        circuitBreakerCooldown: number = 30000 // Cooldown time for circuit breaker (30 seconds)
+    ) {
+        this.databaseUrl = databaseUrl;
+        this.maxRetries = maxRetries;
+        this.retryDelay = retryDelay;
         this.circuitState = 'closed';  // Initial state of the circuit breaker is 'closed'
-        this.circuitBreakerCooldown = 30000;  // Cooldown for circuit breaker in ms (30 seconds)
+        this.circuitBreakerCooldown = circuitBreakerCooldown;
         this.lastFailureTime = 0;  // Initialize time of last failure
+        this.currentRetries = 0;
         this.connectWithRetry();
     }
 

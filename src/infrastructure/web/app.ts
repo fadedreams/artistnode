@@ -33,7 +33,11 @@ export default class App {
         this.logger = logger;
 
         // Initialize the Database (Database is now a class, so we instantiate it)
-        this.database = new Database();
+        this.database = new Database(process.env.DB_URI,  // MongoDB URI (or fallback to default)
+            5,                   // Max retries
+            2000,                // Retry delay in ms
+            30000                // Circuit breaker cooldown in ms);
+        );
         this.database.monitorConnection();  // Call monitorConnection to handle reconnection logic
 
         this.initializeMiddlewares();
