@@ -1,0 +1,41 @@
+import mongoose from 'mongoose';
+import { Database as DatabaseInterface } from '@src/domain/interfaces/Database';
+
+class DatabaseProvider implements DatabaseInterface {
+    private databaseUrl: string; // MongoDB URL
+
+    constructor(databaseUrl: string) {
+        this.databaseUrl = databaseUrl;
+    }
+
+    // Connect to MongoDB
+    async connect(): Promise<void> {
+        try {
+            console.log('Attempting to connect to the database...');
+            await mongoose.connect(this.databaseUrl);
+            console.log('Connected to the database');
+        } catch (error: any) {
+            console.error('Error connecting to the database:', error.message);
+            throw new Error('Database connection failed');
+        }
+    }
+
+    // Monitor disconnection and errors
+    public monitorConnection(): void {
+        mongoose.connection.on('disconnected', async () => {
+            console.warn('Database connection lost. Attempting to reconnect...');
+            await this.connect();
+        });
+
+        mongoose.connection.on('error', (error: any) => {
+            console.error('Database encountered an error:', error.message);
+        });
+    }
+}
+
+export default class DatabaseProviderFactory {
+    static createInstance(): DatabaseProvider {
+        const databaseUrl = process.env.DB_URI || 'mongodb://localhost:27017/artistdb1';
+        return new DatabaseProvider(databaseUrl);
+    }
+}
