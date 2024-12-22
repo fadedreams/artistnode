@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import multer from 'multer';
-import minioClient from '@src/infrastructure/persistence/minioClient';
+import minioClient from '@src/infrastructure/persistence/minioConnection';
 import { ArtUseCase } from '@src/application/usecases/ArtUseCase';
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
 import { Logger } from 'winston';
