@@ -3,7 +3,8 @@ import { createClient } from '@redis/client';
 // Function to attempt connection to Redis and return true/false
 async function connectToRedis() {
     const client = createClient({
-        url: 'redis://localhost:6379' // Adjust to the correct Redis server URL
+        // url: 'redis://localhost:6379'
+        url: process.env.REDIS_URL || 'redis://localhost:6379',
     });
 
     // Handling the error event to prevent crashes and retry connection
@@ -59,7 +60,7 @@ async function reconnectToRedis() {
 }
 
 // Infinite loop for retry logic
-export async function connectWithRetry() {
+async function connectWithRetry() {
     let result;
     let client;
     let retries = 0;

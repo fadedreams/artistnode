@@ -15,6 +15,7 @@ import { Logger } from 'winston';
 
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
+import { connectWithRetry as connectRedis } from '@src/infrastructure/persistence/RedisConnection';  // Import Redis connection logic
 
 const metricsMiddleware = promBundle({
     includeMethod: true,
@@ -36,8 +37,9 @@ export default class App {
         this.database = new Database(process.env.DB_URI,  // MongoDB URI (or fallback to default)
             5,                   // Max retries
             2000,                // Retry delay in ms
-            30000                // Circuit breaker cooldown in ms);
+            30000                // Circuit breaker cooldown in ms
         );
+
         this.database.monitorConnection();  // Call monitorConnection to handle reconnection logic
 
         this.initializeMiddlewares();
@@ -92,6 +94,8 @@ export default class App {
             process.exit(1);
         }
 
+        await connectRedis(); // Call Redis connection function
+
         const server = this.app.listen(this.port, () => {
             this.logger.info(`Server is running on port ${this.port}`);
         });
@@ -121,6 +125,7 @@ export default class App {
             this.logger.info('Disconnecting from the database...');
             await mongoose.disconnect();  // Disconnect Mongoose properly
             this.logger.info('Database disconnected.');
+
         } catch (error) {
             this.logger.error('Error during shutdown:', error);
         }

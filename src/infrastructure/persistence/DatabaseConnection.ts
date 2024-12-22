@@ -46,7 +46,7 @@ class Database {
     }
 
     // Function to handle retries and implement the circuit breaker pattern
-    private async connectWithRetry() {
+    public async connectWithRetry() {
         if (this.circuitState === 'open') {
             const timeSinceLastFailure = Date.now() - this.lastFailureTime;
             if (timeSinceLastFailure < this.circuitBreakerCooldown) {
