@@ -1,10 +1,10 @@
 import { Client } from 'minio';
 
-// Define the MinIO connection class with retry logic
 export default class MinIOConnection {
     private minioClient: Client;
     private maxRetries: number;
     private retryDelay: number;  // Retry delay in milliseconds
+    private isConnected: boolean = false;  // Track the connection status
 
     constructor(
         private minioServer: string,
@@ -19,8 +19,8 @@ export default class MinIOConnection {
         // Initialize MinIO client
         this.minioClient = new Client({
             endPoint: minioServer,
-            port: 9000,
-            useSSL: false,
+            port: 9000,  // Default port, can be overridden by environment
+            useSSL: false,  // Assuming no SSL, set true if SSL is used
             accessKey: minioUser,
             secretKey: minioPass,
         });
@@ -48,6 +48,15 @@ export default class MinIOConnection {
             retryAttempts++;
             console.log(`MinIO reconnect attempt ${retryAttempts}...`);
 
+            // Re-initialize the client
+            this.minioClient = new Client({
+                endPoint: process.env.MINIO_SERVER || 'localhost',
+                port: process.env.MINIO_PORT ? Number(process.env.MINIO_PORT) : 9000,
+                useSSL: false,
+                accessKey: process.env.MINIO_USER,
+                secretKey: process.env.MINIO_PASS,
+            });
+
             const result = await this.connectToMinIO();
 
             if (result.success) {
@@ -67,7 +76,7 @@ export default class MinIOConnection {
         let retries = 0;
         let client: Client | null = null;
 
-        while (retries < this.maxRetries) {
+        while (1) {
             retries++;
             console.log(`MinIO connection attempt ${retries}/${this.maxRetries}`);
 
@@ -75,6 +84,7 @@ export default class MinIOConnection {
 
             if (result.success) {
                 client = result.client!;
+                this.isConnected = true;  // Update connection status
                 console.log('Connected to MinIO');
                 break;
             } else {
@@ -84,5 +94,39 @@ export default class MinIOConnection {
         }
 
         return client; // Return null if connection fails after max retries
+    }
+
+    // Monitor connection periodically to check if it's still active
+    public async monitorConnection(): Promise<void> {
+        setInterval(async () => {
+            if (this.isConnected) {
+                try {
+                    // Check if MinIO is still connected by listing buckets
+                    await this.minioClient.listBuckets();
+                    console.log('MinIO connection is still active.');
+                } catch (error) {
+                    console.error('MinIO connection failed, attempting to reconnect...');
+                    this.isConnected = false;  // Update connection status to disconnected
+                    await this.connectWithRetry();  // Attempt to reconnect
+                }
+            }
+        }, 5000); // Check every 5 seconds (adjustable interval)
+    }
+
+    // Helper function to reset client state if needed
+    public resetClient() {
+        console.log('Resetting MinIO client...');
+        this.minioClient = new Client({
+            endPoint: process.env.MINIO_SERVER || 'localhost',
+            port: process.env.MINIO_PORT ? Number(process.env.MINIO_PORT) : 9000,
+            useSSL: false,
+            accessKey: process.env.MINIO_USER,
+            secretKey: process.env.MINIO_PASS,
+        });
+    }
+
+    // Getter to check if MinIO is connected
+    public getConnectionStatus(): boolean {
+        return this.isConnected;
     }
 }

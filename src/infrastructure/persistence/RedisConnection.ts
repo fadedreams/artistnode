@@ -59,7 +59,7 @@ async function reconnectToRedis() {
 }
 
 // Infinite loop for retry logic
-export async function connectWithRetry() {
+export async function connectWithRetryRedis() {
     let result;
     let client;
     let retries = 0;
@@ -103,4 +103,4 @@ export async function connectWithRetry() {
     }
 }
 
-connectWithRetry();
+connectWithRetryRedis();

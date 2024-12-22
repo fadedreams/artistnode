@@ -15,8 +15,8 @@ import { Logger } from 'winston';
 
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
-import { connectWithRetry } from '@src/infrastructure/persistence/RedisConnection';  // Import Redis connection logic
-// import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
+import { connectWithRetryRedis } from '@src/infrastructure/persistence/RedisConnection';  // Import Redis connection logic
+import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
 
 const metricsMiddleware = promBundle({
     includeMethod: true,
@@ -28,7 +28,7 @@ export default class App {
     private port: number;
     private logger: Logger;
     private database: Database;
-    // private minio: MinIOConnection;
+    private minio: MinIOConnection;
 
     constructor(logger: Logger) {
         this.app = express();
@@ -45,11 +45,11 @@ export default class App {
         this.database.monitorConnection();  // Call monitorConnection to handle reconnection logic
 
         // Initialize MinIOConnection
-        // this.minio = new MinIOConnection(
-        //     process.env.MINIO_SERVER || 'localhost',
-        //     process.env.MINIO_USER as string,
-        //     process.env.MINIO_PASS as string
-        // );
+        this.minio = new MinIOConnection(
+            process.env.MINIO_SERVER || 'localhost:9000',
+            process.env.MINIO_USER as string,
+            process.env.MINIO_PASS as string
+        );
 
         this.initializeMiddlewares();
         this.initializeRoutes();
@@ -96,16 +96,20 @@ export default class App {
 
         // Connect to MongoDB
         try {
-            await this.database.connectWithRetry();  // Calling connectWithRetry on the Database class
+            await this.database.connectWithRetry();
             this.logger.info('Database connected successfully');
         } catch (error) {
             this.logger.error('Failed to connect to the database:', error);
             process.exit(1);
         }
 
-        await connectWithRetry();
-        // await connectRedis(); // Call Redis connection function
+        await connectWithRetryRedis();
 
+        // Connect to MinIO with retries
+        await this.minio.connectWithRetry();
+        this.minio.monitorConnection();  // Start monitoring the MinIO connection
+
+        // await connectRedis(); // Call Redis connection function
         const server = this.app.listen(this.port, () => {
             this.logger.info(`Server is running on port ${this.port}`);
         });
