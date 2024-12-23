@@ -15,7 +15,7 @@ import { Logger } from 'winston';
 
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
-import { connectWithRetryRedis } from '@src/infrastructure/persistence/RedisConnection';  // Import Redis connection logic
+// import { connectWithRetryRedis } from '@src/infrastructure/persistence/RedisConnection';  // Import Redis connection logic
 import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
 
 const metricsMiddleware = promBundle({
@@ -103,13 +103,12 @@ export default class App {
             process.exit(1);
         }
 
-        await connectWithRetryRedis();
+        // await connectWithRetryRedis();
 
         // Connect to MinIO with retries
         await this.minio.connectWithRetry();
         this.minio.monitorConnection();  // Start monitoring the MinIO connection
 
-        // await connectRedis(); // Call Redis connection function
         const server = this.app.listen(this.port, () => {
             this.logger.info(`Server is running on port ${this.port}`);
         });
