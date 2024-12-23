@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo-srv
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mongo-srv
+  template:
+    metadata:
+      labels:
+        app: mongo-srv
+    spec:
+      containers:
+        - name: mongo-srv
+          image: mongo:latest
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_DATABASE
+              value: "artistdb1"
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mongo-srv-service
+spec:
+  selector:
+    app: mongo-srv
+  ports:
+    - protocol: TCP
+      port: 27017
+      targetPort: 27017
+  type: ClusterIP
+

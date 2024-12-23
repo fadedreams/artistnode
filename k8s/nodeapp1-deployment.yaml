@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nodeapp1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nodeapp1
+  template:
+    metadata:
+      labels:
+        app: nodeapp1
+    spec:
+      containers:
+        - name: nodeapp1
+          image: your-dockerhub-user/nodeapp1:latest
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: nodeapp1-config
+          volumeMounts:
+            - name: nodeapp1-data
+              mountPath: /app/data
+          command: ["nodemon", "--watch", "src", "--ext", "ts", "--exec", "tsx", "-r", "tsconfig-paths/register", "src/app.ts"]
+      volumes:
+        - name: nodeapp1-data
+          persistentVolumeClaim:
+            claimName: nodeapp1-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nodeapp1-service
+spec:
+  selector:
+    app: nodeapp1
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
+  type: ClusterIP
+

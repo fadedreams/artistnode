@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nodeapp1-config
+data:
+  .env: |
+    # Put your .env file content here
+    MONGO_URI=mongodb://mongo-srv:27017/artistdb1
+    REDIS_URI=redis://redis:6379
+    MINIO_URI=http://minio:9000
+
