@@ -1,32 +1,27 @@
-# Use the official Node.js Alpine image
-FROM node:alpine
+# Use the official Node.js Debian image as the base image
+FROM node:18-buster
 
-# Set working directory
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy package.json and install dependencies using pnpm
-COPY package.json .
-RUN npm install -g pnpm && pnpm install --only=prod
+# Copy package.json and package-lock.json first to leverage Docker caching
+COPY package.json package-lock.json ./
 
-# Copy only necessary files and directories, excluding node_modules and other unwanted files
-COPY utils/ utils/
-COPY router/ router/
-COPY models/ models/
-COPY middlewares/ middlewares/
-COPY db/ db/
-COPY models/ models/
-COPY controllers/ controllers/
-COPY cloud/ cloud/
+# Install pnpm and the necessary dependencies
+RUN npm install -g pnpm && pnpm install --prod
 
-COPY .env .
-COPY app.js .
-COPY package.json .
-COPY package-lock.json .
+# Copy the source files (excluding node_modules, logs, venv directories, and other unnecessary files)
+COPY src/ src/
+COPY .env ./
+COPY rename2ts.bash ./
+COPY docker-compose.yml ./
+COPY README.md ./
 
-# Install dependencies, including Prisma, and generate Prisma client during build
+# Install any additional dependencies (e.g., Prisma) if required and generate the Prisma client
 RUN pnpm install
 
+# Expose the application port (adjust this based on your app configuration)
 EXPOSE 3000
 
-# Specify the command to run your application
+# Command to run your application
 CMD ["pnpm", "start"]
