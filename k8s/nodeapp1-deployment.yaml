@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: nodeapp1
-          image: your-dockerhub-user/nodeapp1:latest
+          image: fadedreams7/nodeapp1:v1
           ports:
             - containerPort: 3000
           envFrom:
