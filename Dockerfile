@@ -14,6 +14,8 @@ RUN npm add -g tsx nodemon
 COPY src/ src/
 COPY .env ./
 COPY README.md ./
+COPY tsconfig.json ./
+COPY Dockerfile ./
 
 # Install any additional dependencies (e.g., Prisma) if required and generate the Prisma client
 RUN npm install

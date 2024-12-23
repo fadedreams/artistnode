@@ -20,6 +20,9 @@ class UserRouter {
     private initializeRoutes() {
         this.logger.info('Initializing user routes');
 
+        this.router.get('/h', (req, res) => {
+            res.status(200).json({ message: 'Server is healthy!' });
+        });
         // this.router.post('/create', userValidator, validate, this.userController.create);
         this.router.post('/create', userValidator, validate, async (req, res, next) => {
             try {
