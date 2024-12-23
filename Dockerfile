@@ -13,9 +13,7 @@ RUN npm install -g pnpm && pnpm install --prod
 # Copy the source files (excluding node_modules, logs, venv directories, and other unnecessary files)
 COPY src/ src/
 COPY .env ./
-COPY rename2ts.bash ./
-COPY docker-compose.yml ./
-COPY README.md ./
+OPY README.md ./
 
 # Install any additional dependencies (e.g., Prisma) if required and generate the Prisma client
 RUN pnpm install
