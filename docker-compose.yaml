@@ -4,21 +4,21 @@ networks:
 
 services:
 
-  nodeapp1:
-    build: .
-    ports:
-      - "3000:3000"
-    depends_on:
-      - mongo-srv
-      - redis
-      - minio
-    volumes:
-      - nodeapp1-data:/app/data
-    env_file:
-      - ./.env
-    networks:
-      - my_network
-
+  # nodeapp1:
+  #   build: .
+  #   ports:
+  #     - "3000:3000"
+  #   depends_on:
+  #     - mongo-srv
+  #     - redis
+  #     - minio
+  #   volumes:
+  #     - nodeapp1-data:/app/data
+  #   env_file:
+  #     - ./.env
+  #   networks:
+  #     - my_network
+  #
   mongo-srv:
     image: mongo
     environment:
