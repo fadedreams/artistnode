@@ -3,6 +3,8 @@ import { Logger } from 'winston';
 import { UserController } from '@src/infrastructure/web/controllers/user';
 import { userValidator, validate, signInValidator } from '@src/infrastructure/web/middlewares/validator';
 import { isAuth } from '@src/infrastructure/web/middlewares/auth';
+import { connectWithRetryRedis, redisStatus } from '@src/infrastructure/persistence/RedisConnection';
+
 
 class UserRouter {
     private router: Router;

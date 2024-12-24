@@ -15,7 +15,8 @@ import { Logger } from 'winston';
 
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
-// import { connectWithRetryRedis } from '@src/infrastructure/persistence/RedisConnection';  // Import Redis connection logic
+
+import { connectWithRetryRedis, redisStatus } from '@src/infrastructure/persistence/RedisConnection';
 import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
 
 const metricsMiddleware = promBundle({
@@ -103,7 +104,7 @@ export default class App {
             process.exit(1);
         }
 
-        // await connectWithRetryRedis();
+        await connectWithRetryRedis();
 
         // Connect to MinIO with retries
         // await this.minio.connectWithRetry();

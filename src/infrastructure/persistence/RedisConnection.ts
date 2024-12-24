@@ -1,27 +1,30 @@
 import { createClient } from '@redis/client';
 
+let redisStatus = { connected: false }; // Shared status variable to track Redis connection status
+
 // Function to attempt connection to Redis and return true/false
 async function connectToRedis() {
     const client = createClient({
-        url: 'redis://localhost:6379' // Adjust to the correct Redis server URL
+        url: 'redis://localhost:6379', // Adjust to the correct Redis server URL
     });
 
-    // Handling the error event to prevent crashes and retry connection
     client.on('error', (err) => {
         console.error('Redis Client Error:', err);
-        // Only retry on connection errors
         if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
             console.log('Error detected. Will retry connection in the main loop.');
         }
+        redisStatus.connected = false; // Update status on error
     });
 
     try {
         console.log('Attempting to connect to Redis...');
         await client.connect();
         console.log('Connected to Redis');
-        return { success: true, client }; // Return client along with success
+        redisStatus.connected = true; // Update status on successful connection
+        return { success: true, client };
     } catch (error) {
         console.error('Error connecting to Redis:', error.message);
+        redisStatus.connected = false; // Update status on failure
         return { success: false, client };
     }
 }
@@ -36,26 +39,26 @@ async function reconnectToRedis() {
         console.log(`Retry attempt ${retryAttempts}...`);
 
         try {
-            // Create a new client for each retry attempt
             const newClient = createClient({
-                url: 'redis://localhost:6379' // Adjust to the correct Redis server URL
+                url: 'redis://localhost:6379',
             });
 
-            // Try connecting with the new client
             await newClient.connect();
             console.log('Reconnected to Redis');
-            return newClient; // Return the newly connected client
+            redisStatus.connected = true; // Update status on successful reconnection
+            return newClient;
         } catch (error) {
             console.error(`Retry ${retryAttempts} failed:`, error.message);
+            redisStatus.connected = false; // Update status on failure
             if (retryAttempts >= maxRetries) {
                 console.log('Max retry attempts reached. Giving up.');
                 break;
             }
         }
 
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for 2 seconds before retrying
+        await new Promise((resolve) => setTimeout(resolve, 2000));
     }
-    return null; // Return null if all retries fail
+    return null;
 }
 
 // Infinite loop for retry logic
@@ -73,23 +76,21 @@ export async function connectWithRetryRedis() {
         if (result.success) {
             client = result.client;
             console.log('Connection successful');
-            break; // Exit loop once connected
+            break;
         } else {
             console.log(`Retry attempt ${retries}/${maxRetries} failed. Retrying...`);
-            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for 1 second before retrying
+            await new Promise((resolve) => setTimeout(resolve, 1000));
         }
-
-    } while (!result.success && retries < maxRetries); // Stop after max retries
+    } while (!result.success && retries < maxRetries);
 
     if (client) {
-        // Monitor the client for unexpected errors
         client.on('error', async (err) => {
             console.error('Redis Client Error:', err);
             if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
                 console.log('Reconnecting due to error...');
                 const reconnectedClient = await reconnectToRedis();
                 if (reconnectedClient) {
-                    client = reconnectedClient; // Update the client if reconnected successfully
+                    client = reconnectedClient;
                     console.log('Reconnected successfully');
                 } else {
                     console.log('Unable to reconnect. Retrying...');
@@ -99,8 +100,12 @@ export async function connectWithRetryRedis() {
 
         client.on('end', () => {
             console.log('Redis connection closed.');
+            redisStatus.connected = false; // Update status on disconnection
         });
     }
 }
+
+// Export the Redis status so it can be used elsewhere
+export { redisStatus };
 
 connectWithRetryRedis();
