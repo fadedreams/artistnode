@@ -3,7 +3,8 @@ import { Logger } from 'winston';
 import { UserController } from '@src/infrastructure/web/controllers/user';
 import { userValidator, validate, signInValidator } from '@src/infrastructure/web/middlewares/validator';
 import { isAuth } from '@src/infrastructure/web/middlewares/auth';
-import { connectWithRetryRedis, redisStatus } from '@src/infrastructure/persistence/RedisConnection';
+
+import { redisClient, redisStatus } from '@src/infrastructure/persistence/RedisConnection';
 
 
 class UserRouter {
@@ -42,11 +43,45 @@ class UserRouter {
             }
         });
         // this.router.get('/isauth', isAuth, this.isAuthHandler);
-        this.router.get('/isauth', isAuth, async (req, res, next) => {
+        // this.router.get('/isauth', isAuth, async (req, res, next) => {
+        //     try {
+        //         this.isAuthHandler(req, res);
+        //     } catch (error) {
+        //         next(error);
+        //     }
+        // });
+
+        this.router.get('/isauth', isAuth, async (req: Request, res: Response, next: NextFunction) => {
             try {
-                this.isAuthHandler(req, res);
+                if (!redisStatus.connected) {
+                    this.logger.error('Redis is not connected. Cannot process isauth request.');
+                    return res.status(503).json({ message: 'Redis is not connected. Please try again later.' });
+                }
+
+                const userId = req.user?.id; // Assuming `req.user` contains user information
+                const cacheKey = `user:${userId}:auth`;
+
+                // Check Redis cache
+                const cachedData = await redisClient.get(cacheKey);
+                if (cachedData) {
+                    this.logger.info('Returning cached user data from Redis.');
+                    return res.json(JSON.parse(cachedData)); // Parse and return cached data
+                }
+
+                // Fetch data and cache it
+                const userData = {
+                    id: req.user._id,
+                    name: req.user.name,
+                    email: req.user.email,
+                    isVerified: req.user.isVerified,
+                    role: req.user.role,
+                };
+                await redisClient.set(cacheKey, JSON.stringify(userData), { EX: 3600 }); // Cache for 1 hour
+
+                this.logger.info('Cached user data in Redis.');
+                res.json(userData); // Send response
             } catch (error) {
-                next(error);
+                next(error); // Pass error to Express error handler
             }
         });
     }
