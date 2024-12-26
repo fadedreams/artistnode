@@ -70,7 +70,7 @@ export default class App {
         this.app.use('/api/artist', artistRouter(this.logger, redisState));
         this.app.use('/api/art', artRouter(this.logger, redisState));
         this.app.use('/api/user', userRouter(this.logger, redisState));
-        this.app.use('/api/review', reviewRouter(this.logger));
+        this.app.use('/api/review', reviewRouter(this.logger, redisState));
 
         this.logger.info('Routes initialized');
     }
