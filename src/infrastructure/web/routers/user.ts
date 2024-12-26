@@ -4,8 +4,7 @@ import { UserController } from '@src/infrastructure/web/controllers/user';
 import { userValidator, validate, signInValidator } from '@src/infrastructure/web/middlewares/validator';
 import { isAuth } from '@src/infrastructure/web/middlewares/auth';
 
-import { redisClient, redisStatus } from '@src/infrastructure/persistence/RedisConnection';
-
+import redisState from '@src/infrastructure/persistence/RedisConnection'; // Import the unified Redis state
 
 class UserRouter {
     private router: Router;
@@ -26,7 +25,7 @@ class UserRouter {
         this.router.get('/h', (req, res) => {
             res.status(200).json({ message: 'Server is healthy!' });
         });
-        // this.router.post('/create', userValidator, validate, this.userController.create);
+
         this.router.post('/create', userValidator, validate, async (req, res, next) => {
             try {
                 await this.userController.create(req, res);
@@ -34,7 +33,7 @@ class UserRouter {
                 next(error);
             }
         });
-        // this.router.post('/signin', signInValidator, validate, this.userController.signIn);
+
         this.router.post('/signin', signInValidator, validate, async (req, res, next) => {
             try {
                 await this.userController.signIn(req, res);
@@ -42,14 +41,6 @@ class UserRouter {
                 next(error);
             }
         });
-        // this.router.get('/isauth', isAuth, this.isAuthHandler);
-        // this.router.get('/isauth', isAuth, async (req, res, next) => {
-        //     try {
-        //         this.isAuthHandler(req, res);
-        //     } catch (error) {
-        //         next(error);
-        //     }
-        // });
 
         this.router.get(
             '/isauth',
@@ -61,10 +52,10 @@ class UserRouter {
 
                     let userData;
 
-                    if (redisStatus?.connected) {
+                    if (redisState.status.connected) {
                         try {
                             // Attempt to check the Redis cache
-                            const cachedData = await redisClient.get(cacheKey);
+                            const cachedData = await redisState.client.get(cacheKey);
                             if (cachedData) {
                                 this.logger.info('Returning cached user data from Redis.');
                                 res.json(JSON.parse(cachedData)); // Send cached data response
@@ -87,9 +78,9 @@ class UserRouter {
                     };
 
                     // Try to cache the data if Redis is connected
-                    if (redisStatus?.connected) {
+                    if (redisState.status.connected) {
                         try {
-                            await redisClient.set(cacheKey, JSON.stringify(userData), { EX: 3600 });
+                            await redisState.client.set(cacheKey, JSON.stringify(userData), { EX: 3600 });
                             this.logger.info('Cached user data in Redis.');
                         } catch (cacheError) {
                             this.logger.warn('Failed to cache user data in Redis.', cacheError);
@@ -128,4 +119,3 @@ export default (logger: Logger) => {
     const userRouterInstance = new UserRouter(logger);
     return userRouterInstance.getRouter();
 };
-

@@ -16,7 +16,8 @@ import { Logger } from 'winston';
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
 
-import { connectWithRetryRedis, redisStatus } from '@src/infrastructure/persistence/RedisConnection';
+
+import { redisClient, redisStatus, connectWithRetryRedis } from '@src/infrastructure/persistence/RedisConnection';
 import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
 
 const metricsMiddleware = promBundle({
@@ -68,6 +69,7 @@ export default class App {
     private initializeRoutes() {
         this.app.use('/api/artist', artistRouter(this.logger));
         this.app.use('/api/art', artRouter(this.logger));
+        // this.app.use('/api/user', userRouter(this.logger, redisClient));
         this.app.use('/api/user', userRouter(this.logger));
         this.app.use('/api/review', reviewRouter(this.logger));
 
