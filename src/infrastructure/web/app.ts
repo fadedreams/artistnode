@@ -17,7 +17,7 @@ import { Logger } from 'winston';
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
 
 
-import { redisClient, redisStatus, connectWithRetryRedis } from '@src/infrastructure/persistence/RedisConnection';
+import redisState from '@src/infrastructure/persistence/RedisConnection';
 import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
 
 const metricsMiddleware = promBundle({
@@ -69,8 +69,8 @@ export default class App {
     private initializeRoutes() {
         this.app.use('/api/artist', artistRouter(this.logger));
         this.app.use('/api/art', artRouter(this.logger));
-        // this.app.use('/api/user', userRouter(this.logger, redisClient));
-        this.app.use('/api/user', userRouter(this.logger));
+        this.app.use('/api/user', userRouter(this.logger, redisState));
+        // this.app.use('/api/user', userRouter(this.logger));
         this.app.use('/api/review', reviewRouter(this.logger));
 
         this.logger.info('Routes initialized');
@@ -106,7 +106,12 @@ export default class App {
             process.exit(1);
         }
 
-        await connectWithRetryRedis();
+        (async () => {
+            if (!redisState.status.connected) {
+                console.log('Retrying Redis connection...');
+                await redisState.connectWithRetry();
+            }
+        })();
 
         // Connect to MinIO with retries
         // await this.minio.connectWithRetry();

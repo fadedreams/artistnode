@@ -3,12 +3,34 @@ import { createClient } from '@redis/client';
 const redisState = {
     client: null as any, // Redis client instance
     status: { connected: false }, // Shared status variable to track Redis connection status
+
+    // Method to initialize Redis connection with retries
+    async connectWithRetry() {
+        let retries = 0;
+        const maxRetries = 10;
+
+        while (retries < maxRetries) {
+            retries++;
+            console.log(`Redis connection attempt ${retries}/${maxRetries}`);
+            const client = await connectToRedis();
+
+            if (client) {
+                this.client = client; // Set the connected Redis client
+                return;
+            }
+
+            console.log(`Retry attempt ${retries} failed. Retrying in 1 second...`);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+
+        console.error('Unable to connect to Redis after multiple attempts.');
+    },
 };
 
-// Function to attempt connection to Redis and return true/false
+// Function to attempt connection to Redis
 async function connectToRedis() {
     const client = createClient({
-        url: 'redis://localhost:6379', // Adjust to the correct Redis server URL
+        url: process.env.REDIS_URL || 'redis://localhost:6379', // Use environment variable or fallback to localhost
     });
 
     client.on('error', (err) => {
@@ -31,30 +53,7 @@ async function connectToRedis() {
     }
 }
 
-// Function to connect with retries and set the Redis client
-export async function connectWithRetryRedis() {
-    let retries = 0;
-    const maxRetries = 10;
+// Automatically initialize Redis connection on module load
+redisState.connectWithRetry();
 
-    while (retries < maxRetries) {
-        retries++;
-        console.log(`Redis connection attempt ${retries}/${maxRetries}`);
-        const client = await connectToRedis();
-
-        if (client) {
-            redisState.client = client; // Set the connected Redis client
-            return;
-        }
-
-        console.log(`Retry attempt ${retries} failed. Retrying in 1 second...`);
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-    }
-
-    console.error('Unable to connect to Redis after multiple attempts.');
-}
-
-// Export the Redis state
 export default redisState;
-
-// Initialize Redis connection
-connectWithRetryRedis();

@@ -4,16 +4,16 @@ import { UserController } from '@src/infrastructure/web/controllers/user';
 import { userValidator, validate, signInValidator } from '@src/infrastructure/web/middlewares/validator';
 import { isAuth } from '@src/infrastructure/web/middlewares/auth';
 
-import redisState from '@src/infrastructure/persistence/RedisConnection'; // Import the unified Redis state
-
 class UserRouter {
     private router: Router;
     private logger: Logger;
     private userController: UserController;
+    private redisState: any;
 
-    constructor(logger: Logger) {
+    constructor(logger: Logger, redisState: any) {
         this.router = express.Router();
         this.logger = logger;
+        this.redisState = redisState;
         this.userController = new UserController(logger);
 
         this.initializeRoutes();
@@ -52,10 +52,10 @@ class UserRouter {
 
                     let userData;
 
-                    if (redisState.status.connected) {
+                    if (this.redisState.status.connected) {
                         try {
                             // Attempt to check the Redis cache
-                            const cachedData = await redisState.client.get(cacheKey);
+                            const cachedData = await this.redisState.client.get(cacheKey);
                             if (cachedData) {
                                 this.logger.info('Returning cached user data from Redis.');
                                 res.json(JSON.parse(cachedData)); // Send cached data response
@@ -78,9 +78,9 @@ class UserRouter {
                     };
 
                     // Try to cache the data if Redis is connected
-                    if (redisState.status.connected) {
+                    if (this.redisState.status.connected) {
                         try {
-                            await redisState.client.set(cacheKey, JSON.stringify(userData), { EX: 3600 });
+                            await this.redisState.client.set(cacheKey, JSON.stringify(userData), { EX: 3600 });
                             this.logger.info('Cached user data in Redis.');
                         } catch (cacheError) {
                             this.logger.warn('Failed to cache user data in Redis.', cacheError);
@@ -115,7 +115,7 @@ class UserRouter {
     }
 }
 
-export default (logger: Logger) => {
-    const userRouterInstance = new UserRouter(logger);
+export default (logger: Logger, redisState: any) => {
+    const userRouterInstance = new UserRouter(logger, redisState);
     return userRouterInstance.getRouter();
 };
