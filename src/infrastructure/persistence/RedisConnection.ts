@@ -10,9 +10,9 @@ async function connectToRedis() {
     });
 
     client.on('error', (err) => {
-        console.error('Redis Client Error:', err);
+        // console.error('Redis Client Error:', err);
         if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-            console.log('Error detected. Will retry connection in the main loop.');
+            // console.log('Error detected. Will retry connection in the main loop.');
         }
         redisStatus.connected = false; // Update status on error
     });
@@ -24,7 +24,7 @@ async function connectToRedis() {
         redisStatus.connected = true; // Update status on successful connection
         return client;
     } catch (error) {
-        console.error('Error connecting to Redis:', error.message);
+        // console.error('Error connecting to Redis:', error.message);
         redisStatus.connected = false; // Update status on failure
         return null;
     }
@@ -37,7 +37,7 @@ export async function connectWithRetryRedis() {
 
     while (retries < maxRetries) {
         retries++;
-        console.log(`Redis connection attempt ${retries}/${maxRetries}`);
+        // console.log(`Redis connection attempt ${retries}/${maxRetries}`);
         const client = await connectToRedis();
 
         if (client) {
@@ -45,7 +45,7 @@ export async function connectWithRetryRedis() {
             return;
         }
 
-        console.log(`Retry attempt ${retries} failed. Retrying in 1 second...`);
+        // console.log(`Retry attempt ${retries} failed. Retrying in 1 second...`);
         await new Promise((resolve) => setTimeout(resolve, 1000));
     }
 

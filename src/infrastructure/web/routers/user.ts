@@ -56,25 +56,29 @@ class UserRouter {
             isAuth,
             async (req: Request, res: Response, next: NextFunction) => {
                 try {
-                    if (!redisStatus.connected) {
-                        this.logger.error('Redis is not connected. Cannot process isauth request.');
-                        res.status(503).json({ message: 'Redis is not connected. Please try again later.' });
-                        return; // End the request-response cycle early
-                    }
-
                     const userId = req.user?.id; // Assuming `req.user` contains user information
                     const cacheKey = `user:${userId}:auth`;
 
-                    // Check Redis cache
-                    const cachedData = await redisClient.get(cacheKey);
-                    if (cachedData) {
-                        this.logger.info('Returning cached user data from Redis.');
-                        res.json(JSON.parse(cachedData)); // Send cached data response
-                        return; // Ensure no further code runs
+                    let userData;
+
+                    if (redisStatus?.connected) {
+                        try {
+                            // Attempt to check the Redis cache
+                            const cachedData = await redisClient.get(cacheKey);
+                            if (cachedData) {
+                                this.logger.info('Returning cached user data from Redis.');
+                                res.json(JSON.parse(cachedData)); // Send cached data response
+                                return; // Ensure no further code runs
+                            }
+                        } catch (redisError) {
+                            this.logger.warn('Redis error occurred, continuing without cache.', redisError);
+                        }
+                    } else {
+                        this.logger.warn('Redis is not connected. Skipping cache lookup.');
                     }
 
-                    // Fetch user data
-                    const userData = {
+                    // Fetch user data directly (fallback if Redis is not connected or data is not cached)
+                    userData = {
                         id: req.user._id,
                         name: req.user.name,
                         email: req.user.email,
@@ -82,9 +86,15 @@ class UserRouter {
                         role: req.user.role,
                     };
 
-                    // Cache the data
-                    await redisClient.set(cacheKey, JSON.stringify(userData), { EX: 3600 });
-                    this.logger.info('Cached user data in Redis.');
+                    // Try to cache the data if Redis is connected
+                    if (redisStatus?.connected) {
+                        try {
+                            await redisClient.set(cacheKey, JSON.stringify(userData), { EX: 3600 });
+                            this.logger.info('Cached user data in Redis.');
+                        } catch (cacheError) {
+                            this.logger.warn('Failed to cache user data in Redis.', cacheError);
+                        }
+                    }
 
                     res.json(userData); // Send user data response
                 } catch (error) {
