@@ -54,7 +54,68 @@ services:
     networks:
       - my_network
 
+  elasticsearch:
+    # image: docker.elastic.co/elasticsearch/elasticsearch:8.12.0
+    image: elasticsearch:8.7.1
+    container_name: elasticsearch
+    environment:
+      - node.name=elasticsearch
+      - cluster.name=es-docker-cluster
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - xpack.security.enabled=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - my_network
+
+  # logstash:
+  #   # image: docker.elastic.co/logstash/logstash:8.12.0
+  #   image: logstash:8.7.1
+  #   container_name: logstash
+  #   environment:
+  #     - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+  #   volumes:
+  #     - type: bind
+  #       source: ./logstash/pipeline
+  #       target: /usr/share/logstash/pipeline
+  #     - type: bind
+  #       source: ./logstash/config
+  #       target: /usr/share/logstash/config
+  #   ports:
+  #     - "5044:5044"
+  #     - "5000:5000/tcp"
+  #     - "5000:5000/udp"
+  #     - "9600:9600"
+  #   networks:
+  #     - my_network
+  #   depends_on:
+  #     - elasticsearch
+
+  kibana:
+    # image: docker.elastic.co/kibana/kibana:8.12.0
+    image: kibana:8.7.1
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5601:5601"
+    networks:
+      - my_network
+    depends_on:
+      - elasticsearch
+
+
 volumes:
   nodeapp1-data:
   mongo-data:
   minio-data:
+  elasticsearch-data:
+    driver: local
