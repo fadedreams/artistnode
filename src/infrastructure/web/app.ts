@@ -18,7 +18,8 @@ import Database from '@src/infrastructure/persistence/DatabaseConnection';
 
 
 import redisState from '@src/infrastructure/persistence/RedisConnection';
-import MinIOConnection from '@src/infrastructure/persistence/minioConnection'; // Update path as needed
+import MinIOConnection from '@src/infrastructure/persistence/minioConnection';
+import ElasticsearchConnection from '@src/infrastructure/persistence/ElasticsearchConnection';
 
 const metricsMiddleware = promBundle({
     includeMethod: true,
@@ -31,11 +32,13 @@ export default class App {
     private logger: Logger;
     private database: Database;
     // private minio: MinIOConnection;
+    private elkClient: ElasticsearchConnection; // Elasticsearch connection
 
-    constructor(logger: Logger) {
+    constructor(logger: Logger, elkClient: ElasticsearchConnection) {
         this.app = express();
         this.port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
         this.logger = logger;
+        this.elkClient = elkClient;
 
         // Initialize the Database (Database is now a class, so we instantiate it)
         this.database = new Database(process.env.DB_URI,  // MongoDB URI (or fallback to default)
@@ -95,6 +98,7 @@ export default class App {
 
     public async start() {
         this.validateEnvVariables();
+        await this.checkElasticsearchConnection();
 
         // Connect to MongoDB
         try {
@@ -138,6 +142,16 @@ export default class App {
                 process.exit(0);
             });
         });
+    }
+
+    private async checkElasticsearchConnection() {
+        try {
+            const health = await this.elkClient.getClient().cat.health();
+            console.log('Elasticsearch connection successful:', health);
+        } catch (error) {
+            console.error('Failed to connect to Elasticsearch:', error);
+            process.exit(1);  // Exit if Elasticsearch connection fails
+        }
     }
 
     private async gracefulShutdown() {

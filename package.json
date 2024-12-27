@@ -17,6 +17,7 @@
     "author": "",
     "license": "ISC",
     "dependencies": {
+        "@elastic/elasticsearch": "^8.17.0",
         "@types/bcrypt": "^5.0.2",
         "@types/multer": "^1.4.12",
         "bcrypt": "^5.1.1",
@@ -37,7 +38,8 @@
         "multer": "^1.4.5-lts.1",
         "redis": "^4.6.11",
         "tsc-alias": "^1.8.10",
-        "winston": "^3.11.0"
+        "winston": "^3.17.0",
+        "winston-elasticsearch": "^0.19.0"
     },
     "devDependencies": {
         "@types/cors": "^2.8.17",
