@@ -3,6 +3,7 @@ import { Client } from '@elastic/elasticsearch';
 class ElasticsearchConnection {
     private client: Client | null = null;
     private status: { connected: boolean } = { connected: false };
+    private healthCheckInterval: NodeJS.Timeout | null = null;
 
     constructor() {
         this.retryConnection(); // Automatically start retrying the connection when instantiated
@@ -28,6 +29,9 @@ class ElasticsearchConnection {
                 console.log('Elasticsearch connection successful:', health);
                 this.client = client; // Set the client
                 this.status.connected = true; // Update connection status
+
+                // Start periodic health checks
+                this.startHealthCheck();
             } catch (error) {
                 console.error('Error connecting to Elasticsearch:', error); // Log the full error object
                 this.client = null; // Reset the client
@@ -35,6 +39,32 @@ class ElasticsearchConnection {
                 await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds before retrying
             }
         }
+    }
+
+    // Method to start periodic health checks
+    private startHealthCheck(): void {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval); // Clear any existing interval
+        }
+
+        this.healthCheckInterval = setInterval(async () => {
+            if (!this.client) {
+                console.error('Elasticsearch client is not initialized.');
+                this.status.connected = false;
+                return;
+            }
+
+            try {
+                await this.client.cat.health(); // Perform a health check
+                console.log('Elasticsearch health check successful.');
+            } catch (error) {
+                console.error('Elasticsearch health check failed:', error);
+                this.status.connected = false;
+                this.client = null; // Reset the client
+                clearInterval(this.healthCheckInterval!); // Stop the health check interval
+                this.retryConnection(); // Attempt to reconnect
+            }
+        }, 10000); // Check every 10 seconds
     }
 
     // Method to get the Elasticsearch client
@@ -45,6 +75,14 @@ class ElasticsearchConnection {
     // Method to check the connection status
     public getStatus(): { connected: boolean } {
         return this.status;
+    }
+
+    // Method to stop health checks (e.g., during shutdown)
+    public stopHealthCheck(): void {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
     }
 }
 

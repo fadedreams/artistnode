@@ -112,7 +112,7 @@ export default class App {
         // Check the connection status
         console.log('Elasticsearch connection status:', elasticsearchConnection.getStatus());
 
-        // Retry the connection if not connected (already handled in the constructor)
+        // Retry the connection if not connected
         if (!elasticsearchConnection.getStatus().connected) {
             await elasticsearchConnection.retryConnection();
         }
