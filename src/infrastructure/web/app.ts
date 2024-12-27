@@ -16,10 +16,9 @@ import { Logger } from 'winston';
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
 
-
 import redisState from '@src/infrastructure/persistence/RedisConnection';
-import MinIOConnection from '@src/infrastructure/persistence/minioConnection';
 import ElasticsearchConnection from '@src/infrastructure/persistence/ElasticsearchConnection';
+import MinIOConnection from '@src/infrastructure/persistence/minioConnection';
 
 const metricsMiddleware = promBundle({
     includeMethod: true,
@@ -31,14 +30,11 @@ export default class App {
     private port: number;
     private logger: Logger;
     private database: Database;
-    // private minio: MinIOConnection;
-    private elkClient: ElasticsearchConnection; // Elasticsearch connection
 
-    constructor(logger: Logger, elkClient: ElasticsearchConnection) {
+    constructor(logger: Logger) {
         this.app = express();
         this.port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
         this.logger = logger;
-        this.elkClient = elkClient;
 
         // Initialize the Database (Database is now a class, so we instantiate it)
         this.database = new Database(process.env.DB_URI,  // MongoDB URI (or fallback to default)
@@ -48,13 +44,6 @@ export default class App {
         );
 
         this.database.monitorConnection();  // Call monitorConnection to handle reconnection logic
-
-        // Initialize MinIOConnection
-        // this.minio = new MinIOConnection(
-        //     process.env.MINIO_SERVER || 'localhost:9000',
-        //     process.env.MINIO_USER as string,
-        //     process.env.MINIO_PASS as string
-        // );
 
         this.initializeMiddlewares();
         this.initializeRoutes();
@@ -70,6 +59,7 @@ export default class App {
     }
 
     private initializeRoutes() {
+        // Pass both redisState and to routers
         this.app.use('/api/artist', artistRouter(this.logger, redisState));
         this.app.use('/api/art', artRouter(this.logger, redisState));
         this.app.use('/api/user', userRouter(this.logger, redisState));
@@ -85,6 +75,7 @@ export default class App {
             'MINIO_SERVER',
             'MINIO_USER',
             'MINIO_PASS',
+            'ELASTICSEARCH_URL', // Ensure Elasticsearch URL is required
         ];
 
         const missingEnvVariables = requiredEnvVariables.filter((envVar) => !process.env[envVar]);
@@ -98,7 +89,6 @@ export default class App {
 
     public async start() {
         this.validateEnvVariables();
-        await this.checkElasticsearchConnection();
 
         // Connect to MongoDB
         try {
@@ -109,6 +99,7 @@ export default class App {
             process.exit(1);
         }
 
+        // Connect to Redis
         (async () => {
             if (!redisState.status.connected) {
                 console.log('Retrying Redis connection...');
@@ -116,9 +107,15 @@ export default class App {
             }
         })();
 
-        // Connect to MinIO with retries
-        // await this.minio.connectWithRetry();
-        // this.minio.monitorConnection();  // Start monitoring the MinIO connection
+        const elasticsearchConnection = new ElasticsearchConnection();
+
+        // Check the connection status
+        console.log('Elasticsearch connection status:', elasticsearchConnection.getStatus());
+
+        // Retry the connection if not connected (already handled in the constructor)
+        if (!elasticsearchConnection.getStatus().connected) {
+            await elasticsearchConnection.retryConnection();
+        }
 
         const server = this.app.listen(this.port, () => {
             this.logger.info(`Server is running on port ${this.port}`);
@@ -144,21 +141,18 @@ export default class App {
         });
     }
 
-    private async checkElasticsearchConnection() {
-        try {
-            const health = await this.elkClient.getClient().cat.health();
-            console.log('Elasticsearch connection successful:', health);
-        } catch (error) {
-            console.error('Failed to connect to Elasticsearch:', error);
-            process.exit(1);  // Exit if Elasticsearch connection fails
-        }
-    }
-
     private async gracefulShutdown() {
         try {
             this.logger.info('Disconnecting from the database...');
             await mongoose.disconnect();  // Disconnect Mongoose properly
             this.logger.info('Database disconnected.');
+
+            // Close the Redis connection
+            if (redisState.client) {
+                this.logger.info('Closing Redis connection...');
+                await redisState.client.quit();
+                this.logger.info('Redis connection closed.');
+            }
 
         } catch (error) {
             this.logger.error('Error during shutdown:', error);
