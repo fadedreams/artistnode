@@ -16,8 +16,9 @@ import { Logger } from 'winston';
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
 
-import redisState from '@src/infrastructure/persistence/RedisConnection';
+// import redisState from '@src/infrastructure/persistence/RedisConnection';
 import ElasticsearchConnection from '@src/infrastructure/persistence/ElasticsearchConnection';
+import RedisConnection from '@src/infrastructure/persistence/RedisConnection';
 import MinIOConnection from '@src/infrastructure/persistence/minioConnection';
 
 const metricsMiddleware = promBundle({
@@ -30,7 +31,8 @@ export default class App {
     private port: number;
     private logger: Logger;
     private database: Database;
-    private elasticsearchConnection: ElasticsearchConnection; // Add Elasticsearch connection
+    private elasticsearchConnection: ElasticsearchConnection;
+    private redisConnection: RedisConnection;
 
     constructor(logger: Logger) {
         this.app = express();
@@ -48,6 +50,7 @@ export default class App {
 
         // Initialize Elasticsearch connection
         this.elasticsearchConnection = new ElasticsearchConnection(this.logger);
+        this.redisConnection = new RedisConnection(this.logger);
 
         this.initializeMiddlewares();
         this.initializeRoutes();
@@ -67,11 +70,11 @@ export default class App {
         const elk_client = this.elasticsearchConnection.getClient();
 
         // Pass redisState and elk_client to routers
-        this.app.use('/api/artist', artistRouter(this.logger, redisState));
-        this.app.use('/api/art', artRouter(this.logger, redisState));
-        this.app.use('/api/user', userRouter(this.logger, redisState, elk_client));
-        this.app.use('/api/review', reviewRouter(this.logger, redisState));
-
+        // this.app.use('/api/artist', artistRouter(this.logger, redisState));
+        // this.app.use('/api/art', artRouter(this.logger, redisState));
+        // this.app.use('/api/user', userRouter(this.logger, redisState, elk_client));
+        // this.app.use('/api/review', reviewRouter(this.logger, redisState));
+        //
         this.logger.info('Routes initialized');
     }
 
@@ -106,32 +109,42 @@ export default class App {
             process.exit(1);
         }
 
-        // Connect to Redis
-        // (async () => {
-        //     if (!redisState.status.connected) {
-        //         console.log('Retrying Redis connection...');
-        //         await redisState.connectWithRetry();
-        //     }
-        // })();
         // Check the connection status
-        console.log('Redis connection status:', redisState.getStatus());
 
-        const client = redisState.getClient();
+        // console.log('Redis connection status:', redisState.getStatus());
+        // const client = redisState.getClient();
+        // if (client) {
+        //     try {
+        //         // Example: Set a key in Redis
+        //         await client.set('myKey', 'myValue');
+        //         console.log('Key set successfully.');
+        //
+        //         // Example: Get a key from Redis
+        //         const value = await client.get('myKey');
+        //         console.log('Value retrieved:', value);
+        //     } catch (error) {
+        //         console.error('Error using Redis:', error);
+        //     }
+        // } else {
+        //     console.error('Redis client is not connected.');
+        // }
 
+        // Check the Redis connection status
+        this.logger.info('Redis connection status:', this.redisConnection.getStatus());
+
+        const client = this.redisConnection.getClient();
         if (client) {
             try {
-                // Example: Set a key in Redis
                 await client.set('myKey', 'myValue');
-                console.log('Key set successfully.');
+                this.logger.info('Key set successfully.');
 
-                // Example: Get a key from Redis
                 const value = await client.get('myKey');
-                console.log('Value retrieved:', value);
+                this.logger.info('Value retrieved:', value);
             } catch (error) {
-                console.error('Error using Redis:', error);
+                this.logger.error('Error using Redis:', error);
             }
         } else {
-            console.error('Redis client is not connected.');
+            this.logger.error('Redis client is not connected.');
         }
 
         // Retry Elasticsearch connection if not connected

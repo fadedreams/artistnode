@@ -1,11 +1,14 @@
 import { createClient, RedisClientType } from '@redis/client';
+import { Logger } from 'winston';
 
 class RedisConnection {
     private client: RedisClientType | null = null;
     private status: { connected: boolean } = { connected: false };
     private healthCheckInterval: NodeJS.Timeout | null = null;
+    private logger: Logger;
 
-    constructor() {
+    constructor(logger: Logger) {
+        this.logger = logger;
         this.connectWithRetry(); // Automatically initialize Redis connection on instantiation
     }
 
@@ -16,7 +19,7 @@ class RedisConnection {
 
         while (retries < maxRetries) {
             retries++;
-            console.log(`Redis connection attempt ${retries}/${maxRetries}`);
+            this.logger.info(`Redis connection attempt ${retries}/${maxRetries}`);
             let client = null;
             client = await this.connectToRedis();
 
@@ -26,11 +29,11 @@ class RedisConnection {
                 return;
             }
 
-            console.log(`Retry attempt ${retries} failed. Retrying in 1 second...`);
+            this.logger.info(`Retry attempt ${retries} failed. Retrying in 1 second...`);
             await new Promise((resolve) => setTimeout(resolve, 1000));
         }
 
-        console.error('Unable to connect to Redis after multiple attempts.');
+        this.logger.error('Unable to connect to Redis after multiple attempts.');
     }
 
     // Method to attempt connection to Redis
@@ -41,19 +44,19 @@ class RedisConnection {
 
         client.on('error', (err) => {
             if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
-                console.log('Redis connection error detected. Retrying...');
+                this.logger.info('Redis connection error detected. Retrying...');
             }
             this.status.connected = false; // Update status on error
         });
 
         try {
-            console.log('Attempting to connect to Redis...');
+            this.logger.info('Attempting to connect to Redis...');
             await client.connect();
-            console.log('Connected to Redis');
+            this.logger.info('Connected to Redis');
             this.status.connected = true; // Update status on successful connection
             return client;
         } catch (error) {
-            console.error('Error connecting to Redis:', error.message);
+            this.logger.error('Error connecting to Redis:', error.message);
             this.status.connected = false; // Update status on failure
             return null;
         }
@@ -67,16 +70,16 @@ class RedisConnection {
 
         this.healthCheckInterval = setInterval(async () => {
             if (!this.client) {
-                console.error('Redis client is not initialized.');
+                this.logger.error('Redis client is not initialized.');
                 this.status.connected = false;
                 return;
             }
 
             try {
                 await this.client.ping(); // Simple ping to check health
-                console.log('Redis health check successful.');
+                this.logger.info('Redis health check successful.');
             } catch (error) {
-                console.error('Redis health check failed:', error);
+                this.logger.error('Redis health check failed:', error);
                 this.status.connected = false;
                 this.client = null;
                 clearInterval(this.healthCheckInterval!);
@@ -101,7 +104,7 @@ class RedisConnection {
             await this.client.quit();
             this.client = null;
             this.status.connected = false;
-            console.log('Redis connection closed.');
+            this.logger.info('Redis connection closed.');
         }
     }
 
@@ -114,7 +117,5 @@ class RedisConnection {
     }
 }
 
-// Create a singleton instance of RedisConnection
-const redisState = new RedisConnection();
-
-export default redisState;
+// Export the class instead of a singleton instance
+export default RedisConnection;

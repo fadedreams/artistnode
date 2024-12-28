@@ -57,3 +57,12 @@ async function connectToRedis() {
 redisState.connectWithRetry();
 
 export default redisState;
+
+
+        // Connect to Redis
+        // (async () => {
+        //     if (!redisState.status.connected) {
+        //         console.log('Retrying Redis connection...');
+        //         await redisState.connectWithRetry();
+        //     }
+        // })();
