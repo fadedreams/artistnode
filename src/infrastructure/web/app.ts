@@ -95,8 +95,9 @@ export default class App {
         // Define routes
         this.app.use('/api/artist', artistRouter(this.logger, this.redisConnection));
         this.app.use('/api/art', artRouter(this.logger, this.redisConnection));
-        this.app.use('/api/user', userRouter(this.logger, this.redisConnection, elk_client));
-        this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection));
+        // this.app.use('/api/user', userRouter(this.logger, this.redisConnection, elk_client));
+        this.app.use('/api/user', userRouter(this.logger, this.redisConnection));
+        this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection, elk_client));
 
         // Health check endpoint
         this.app.get('/health', async (req, res) => {

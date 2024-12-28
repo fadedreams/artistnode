@@ -12,11 +12,11 @@ class UserRouter {
     private redisState: any;
     private elk_client: Client | null; // Add Elasticsearch client
 
-    constructor(logger: Logger, redisState: any, elk_client: Client | null) {
+    constructor(logger: Logger, redisState: any) {
         this.router = express.Router();
         this.logger = logger;
         this.redisState = redisState;
-        this.elk_client = elk_client; // Initialize Elasticsearch client
+        // this.elk_client = elk_client; // Initialize Elasticsearch client
         this.userController = new UserController(logger);
 
         this.initializeRoutes();
@@ -91,21 +91,21 @@ class UserRouter {
                     }
 
                     // Example: Log user data to Elasticsearch if elk_client is available
-                    if (this.elk_client) {
-                        try {
-                            await this.elk_client.index({
-                                index: 'user_logs', // Ensure this matches the index name
-                                body: {
-                                    userId: userData.id,
-                                    action: 'isauth',
-                                    timestamp: new Date().toISOString(),
-                                },
-                            });
-                            this.logger.info('Logged user data to Elasticsearch.');
-                        } catch (elkError) {
-                            this.logger.warn('Failed to log user data to Elasticsearch.', elkError);
-                        }
-                    }
+                    // if (this.elk_client) {
+                    //     try {
+                    //         await this.elk_client.index({
+                    //             index: 'user_logs', // Ensure this matches the index name
+                    //             body: {
+                    //                 userId: userData.id,
+                    //                 action: 'isauth',
+                    //                 timestamp: new Date().toISOString(),
+                    //             },
+                    //         });
+                    //         this.logger.info('Logged user data to Elasticsearch.');
+                    //     } catch (elkError) {
+                    //         this.logger.warn('Failed to log user data to Elasticsearch.', elkError);
+                    //     }
+                    // }
 
                     res.json(userData); // Send user data response
                 } catch (error) {
@@ -135,7 +135,7 @@ class UserRouter {
     }
 }
 
-export default (logger: Logger, redisState: any, elk_client: Client | null) => {
+export default (logger: Logger, redisState: any) => {
     const userRouterInstance = new UserRouter(logger, redisState, elk_client);
     return userRouterInstance.getRouter();
 };
