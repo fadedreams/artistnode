@@ -30,6 +30,7 @@ export default class App {
     private port: number;
     private logger: Logger;
     private database: Database;
+    private elasticsearchConnection: ElasticsearchConnection; // Add Elasticsearch connection
 
     constructor(logger: Logger) {
         this.app = express();
@@ -45,6 +46,9 @@ export default class App {
 
         this.database.monitorConnection();  // Call monitorConnection to handle reconnection logic
 
+        // Initialize Elasticsearch connection
+        this.elasticsearchConnection = new ElasticsearchConnection(this.logger);
+
         this.initializeMiddlewares();
         this.initializeRoutes();
     }
@@ -59,10 +63,13 @@ export default class App {
     }
 
     private initializeRoutes() {
-        // Pass both redisState and to routers
+        // Get the Elasticsearch client
+        const elk_client = this.elasticsearchConnection.getClient();
+
+        // Pass redisState and elk_client to routers
         this.app.use('/api/artist', artistRouter(this.logger, redisState));
         this.app.use('/api/art', artRouter(this.logger, redisState));
-        this.app.use('/api/user', userRouter(this.logger, redisState));
+        this.app.use('/api/user', userRouter(this.logger, redisState, elk_client));
         this.app.use('/api/review', reviewRouter(this.logger, redisState));
 
         this.logger.info('Routes initialized');
@@ -100,21 +107,45 @@ export default class App {
         }
 
         // Connect to Redis
-        (async () => {
-            if (!redisState.status.connected) {
-                console.log('Retrying Redis connection...');
-                await redisState.connectWithRetry();
-            }
-        })();
-
-        const elasticsearchConnection = new ElasticsearchConnection();
-
+        // (async () => {
+        //     if (!redisState.status.connected) {
+        //         console.log('Retrying Redis connection...');
+        //         await redisState.connectWithRetry();
+        //     }
+        // })();
         // Check the connection status
-        console.log('Elasticsearch connection status:', elasticsearchConnection.getStatus());
+        console.log('Redis connection status:', redisState.getStatus());
 
-        // Retry the connection if not connected
-        if (!elasticsearchConnection.getStatus().connected) {
-            await elasticsearchConnection.retryConnection();
+        const client = redisState.getClient();
+
+        if (client) {
+            try {
+                // Example: Set a key in Redis
+                await client.set('myKey', 'myValue');
+                console.log('Key set successfully.');
+
+                // Example: Get a key from Redis
+                const value = await client.get('myKey');
+                console.log('Value retrieved:', value);
+            } catch (error) {
+                console.error('Error using Redis:', error);
+            }
+        } else {
+            console.error('Redis client is not connected.');
+        }
+
+        // Retry Elasticsearch connection if not connected
+        if (!this.elasticsearchConnection.getStatus().connected) {
+            await this.elasticsearchConnection.retryConnection();
+        }
+
+        // Get the Elasticsearch client
+        const elk_client = this.elasticsearchConnection.getClient();
+        if (elk_client) {
+            // console.log('Elasticsearch client is ready:', elk_client);
+            console.log('Elasticsearch client is ready:');
+        } else {
+            console.error('Failed to connect to Elasticsearch.');
         }
 
         const server = this.app.listen(this.port, () => {
