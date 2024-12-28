@@ -62,7 +62,7 @@ export default class App {
         this.logger = logger;
 
         // Initialize the Database
-        this.database = new Database(config.dbUri, 5, 2000, 30000);
+        this.database = new Database(logger, config.dbUri, 5, 2000, 30000);
         this.database.monitorConnection(); // Call monitorConnection to handle reconnection logic
 
         // Initialize Elasticsearch and Redis connections
