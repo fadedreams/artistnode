@@ -136,6 +136,6 @@ class UserRouter {
 }
 
 export default (logger: Logger, redisState: any) => {
-    const userRouterInstance = new UserRouter(logger, redisState, elk_client);
+    const userRouterInstance = new UserRouter(logger, redisState);
     return userRouterInstance.getRouter();
 };

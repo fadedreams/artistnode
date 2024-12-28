@@ -55,6 +55,7 @@ export default class App {
     private database: Database;
     private elasticsearchConnection: ElasticsearchConnection;
     private redisConnection: RedisConnection;
+    private minio: MinIOConnection;
 
     constructor(logger: Logger) {
         this.app = express();
@@ -68,6 +69,13 @@ export default class App {
         // Initialize Elasticsearch and Redis connections
         this.elasticsearchConnection = new ElasticsearchConnection(this.logger);
         this.redisConnection = new RedisConnection(this.logger);
+
+        // Initialize MinIOConnection
+        this.minio = new MinIOConnection(
+            process.env.MINIO_SERVER || 'localhost:9000',
+            process.env.MINIO_USER as string,
+            process.env.MINIO_PASS as string
+        );
 
         this.initializeMiddlewares();
         this.initializeRoutes();
@@ -190,6 +198,27 @@ export default class App {
         }
     }
 
+    private async checkMinioConnection(): Promise<void> {
+        try {
+            this.logger.info('Attempting to connect to MinIO...');
+
+            // Connect to MinIO with retries
+            await this.minio.connectWithRetry();
+            this.logger.info('Successfully connected to MinIO.');
+
+            // Start monitoring the MinIO connection
+            this.minio.monitorConnection();
+            this.logger.info('Started monitoring MinIO connection.');
+        } catch (error) {
+            this.logger.error('Failed to connect to MinIO:', error);
+
+            // Optionally, you can retry the connection or exit the application
+            this.logger.info('Retrying MinIO connection in 5 seconds...');
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            await this.checkMinioConnection(); // Retry the connection
+        }
+    }
+
     private async startServer(): Promise<void> {
         const server = this.app.listen(this.port, () => {
             this.logger.info('Server is running', { port: this.port });
@@ -221,6 +250,7 @@ export default class App {
         await this.connectToDatabase();
         await this.checkRedisConnection();
         await this.checkElasticsearchConnection();
+        await this.checkMinioConnection();
         await this.startServer();
     }
 
