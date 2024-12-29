@@ -112,6 +112,27 @@ services:
     depends_on:
       - elasticsearch
 
+  logstash:
+    image: logstash:8.7.1
+    container_name: logstash
+    environment:
+      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    volumes:
+      - type: bind
+        source: ./logstash/pipeline
+        target: /usr/share/logstash/pipeline
+      - type: bind
+        source: ./logstash/config
+        target: /usr/share/logstash/config
+    ports:
+      - "5044:5044"
+      - "5000:5000/tcp"
+      - "5000:5000/udp"
+      - "9600:9600"
+    networks:
+      - my_network
+    depends_on:
+      - elasticsearch
 
 volumes:
   nodeapp1-data:

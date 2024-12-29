@@ -1,7 +1,7 @@
 import dotenv from 'dotenv';
 dotenv.config();
 
-import express, { Application } from 'express';
+import express, { Application, NextFunction, Request, Response } from 'express';
 import cors from 'cors';
 import promBundle from 'express-prom-bundle';
 import mongoose from 'mongoose';
@@ -12,6 +12,7 @@ import artRouter from '@src/infrastructure/web/routers/art';
 import reviewRouter from '@src/infrastructure/web/routers/review';
 
 import { Logger } from 'winston';
+import { ValidationError, DatabaseError } from '@src/domain/errors/CustomErrors'
 
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
@@ -88,11 +89,18 @@ export default class App {
         this.app.get('/metrics', metricsMiddleware.metricsMiddleware);
 
         // Centralized error handling
-        this.app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-            this.logger.error('Unhandled error:', err);
-            res.status(500).json({ error: 'Internal Server Error' });
+        this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
+            if (err instanceof ValidationError) {
+                this.logger.warn('Validation error:', err);
+                res.status(400).json({ error: err.message });
+            } else if (err instanceof DatabaseError) {
+                this.logger.error('Database error:', err);
+                res.status(503).json({ error: 'Service Unavailable' });
+            } else {
+                this.logger.error('Unhandled error:', err);
+                res.status(500).json({ error: 'Internal Server Error' });
+            }
         });
-
         this.logger.info('Middlewares initialized');
     }
 
