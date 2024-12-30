@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import express, { Application, NextFunction, Request, Response } from 'express';
+import rateLimit from 'express-rate-limit';
 import cors from 'cors';
 import promBundle from 'express-prom-bundle';
 import mongoose from 'mongoose';
@@ -87,6 +88,16 @@ export default class App {
         this.app.use(express.json());
         this.app.use(metricsMiddleware);
         this.app.get('/metrics', metricsMiddleware.metricsMiddleware);
+
+        // Rate limiting configuration
+        const limiter = rateLimit({
+            windowMs: 15 * 60 * 1000, // 15 minutes
+            max: 100, // Limit each IP to 100 requests per windowMs
+            message: 'Too many requests from this IP, please try again after 15 minutes',
+        });
+
+        // Apply the rate limiter to all requests
+        this.app.use(limiter);
 
         // Centralized error handling
         this.app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
@@ -202,7 +213,7 @@ export default class App {
             this.logger.info('Database connected successfully');
         } catch (error) {
             this.logger.error('Failed to connect to the database', { error: error.message });
-            process.exit(1);
+            // process.exit(1);
         }
     }
 
@@ -238,7 +249,7 @@ export default class App {
             await this.gracefulShutdown();
             server.close(() => {
                 this.logger.info('Server closed.');
-                process.exit(0);
+                // process.exit(0);
             });
         });
 
@@ -247,7 +258,7 @@ export default class App {
             await this.gracefulShutdown();
             server.close(() => {
                 this.logger.info('Server closed.');
-                process.exit(0);
+                // process.exit(0);
             });
         });
     }

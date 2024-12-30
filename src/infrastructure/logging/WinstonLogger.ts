@@ -1,15 +1,15 @@
 import winston from 'winston';
-import { ElasticsearchTransport } from 'winston-elasticsearch'; // Import ElasticsearchTransport
+import { ElasticsearchTransport } from 'winston-elasticsearch';
 
 class WinstonLogger {
+    private static instance: WinstonLogger;
     private logger: winston.Logger;
 
-    constructor() {
+    private constructor() {
         // Elasticsearch Transport Options
         const esTransportOptions = {
             level: 'info', // Log level to send to Elasticsearch
             clientOpts: {
-                // node: 'http://localhost:9200', // Elasticsearch URL
                 node: process.env.ELASTICSEARCH_URL, // Elasticsearch URL
                 auth: {
                     username: 'elastic', // Optional, if security is enabled
@@ -37,11 +37,16 @@ class WinstonLogger {
         });
     }
 
+    public static getInstance(): WinstonLogger {
+        if (!WinstonLogger.instance) {
+            WinstonLogger.instance = new WinstonLogger();
+        }
+        return WinstonLogger.instance;
+    }
+
     public getLogger(): winston.Logger {
         return this.logger;
     }
 }
 
-// Create and export the logger instance
-const loggerInstance = new WinstonLogger();
-export default loggerInstance.getLogger();
+export default WinstonLogger.getInstance().getLogger();
