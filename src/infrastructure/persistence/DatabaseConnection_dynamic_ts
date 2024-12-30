@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 import { Logger } from 'winston';
 
 class Database {
-    private static instance: Database; // Static instance for Singleton pattern
     private databaseUrl: string;
     private maxRetries: number;
     private retryDelay: number;
@@ -15,8 +14,8 @@ class Database {
     // Instance-level variable to track MongoDB connection status
     public isConnected: boolean = false; // Initially set to false
 
-    // Private constructor to prevent direct instantiation
-    private constructor(
+    // Constructor accepting connection configuration parameters and logger
+    constructor(
         logger: Logger,
         databaseUrl: string = process.env.DB_URI || 'mongodb://localhost:27017/artistdb1',
         maxRetries: number = 5,
@@ -32,20 +31,6 @@ class Database {
         this.lastFailureTime = 0; // Initialize time of last failure
         this.currentRetries = 0;
         this.connectWithRetry();
-    }
-
-    // Static method to get the Singleton instance
-    public static getInstance(
-        logger: Logger,
-        databaseUrl?: string,
-        maxRetries?: number,
-        retryDelay?: number,
-        circuitBreakerCooldown?: number
-    ): Database {
-        if (!Database.instance) {
-            Database.instance = new Database(logger, databaseUrl, maxRetries, retryDelay, circuitBreakerCooldown);
-        }
-        return Database.instance;
     }
 
     // Function to connect to MongoDB
@@ -131,3 +116,4 @@ class Database {
 }
 
 export default Database;
+export { Database }; // Export the Database class so we can access isConnected status from other modules
