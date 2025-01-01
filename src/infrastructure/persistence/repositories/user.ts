@@ -2,8 +2,9 @@ import { UserDTO, SignInDTO, CreateUserResponse, SignInResponse } from '@src/dom
 import UserModel from '@src/infrastructure/persistence/models/userModel'; // Assuming Mongoose model is imported
 import jwt from 'jsonwebtoken';
 import { Logger } from 'winston';
+import IUserRepository from '@src/domain/interfaces/IUserRepository';
 
-export class UserRepository {
+export class UserRepository implements IUserRepository {
     private logger: Logger;
 
     constructor(logger: Logger) {

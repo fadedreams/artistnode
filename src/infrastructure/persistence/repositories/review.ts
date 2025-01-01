@@ -1,8 +1,9 @@
 import ReviewModel from '@src/infrastructure/persistence/models/reviewModel';
 import { CreateReviewDTO, UpdateReviewDTO, IReview, ReviewData, UpdatedReviewResponse, CreateReviewResponse, SearchReviewDTO } from '@src/domain/entities/review';
 import { Logger } from 'winston';
+import IReviewRepository from '@src/domain/interfaces/IReviewRepository';
 
-export class ReviewRepository {
+export class ReviewRepository implements IReviewRepository {
     private logger: Logger;
 
     constructor(logger: Logger) {

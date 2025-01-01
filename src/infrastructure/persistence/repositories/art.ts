@@ -1,8 +1,9 @@
 import ArtModel from '@src/infrastructure/persistence/models/artModel';
 import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, IArt } from '@src/domain/entities/art';
 import { Logger } from 'winston';
+import IArtRepository from '@src/domain/interfaces/IArtRepository';
 
-export class ArtRepository {
+export class ArtRepository implements IArtRepository {
     private logger: Logger;
 
     constructor(logger: Logger) {

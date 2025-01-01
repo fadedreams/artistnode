@@ -15,7 +15,9 @@ import {
 } from '@src/domain/entities/artist';
 import { Logger } from 'winston';
 
-export class ArtistRepository {
+import IArtistRepository from '@src/domain/interfaces/IArtistRepository';
+
+export class ArtistRepository implements IArtistRepository {
     private logger: Logger;
 
     constructor(logger: Logger) {
