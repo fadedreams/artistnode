@@ -8,8 +8,9 @@ import { ReviewRepository } from '@src/infrastructure/persistence/repositories/r
 
 import { Router, Request, Response, NextFunction } from 'express';
 import { CreateReviewDTO, UpdateReviewDTO, IReview, ReviewData, UpdatedReviewResponse } from '@src/domain/entities/review';
+import IReviewController from '@src/domain/interfaces/IReviewController';
 
-export default class ReviewController {
+export default class ReviewController implements IReviewController {
     private reviewUseCase: ReviewUseCase;
     private logger: Logger;
 

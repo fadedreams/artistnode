@@ -17,8 +17,9 @@ import {
     GetArtistsResponse,
     GetActorsResponse
 } from '@src/domain/entities/artist';
+import IArtistController from '@src/domain/interfaces/IArtistControler';
 
-export default class ArtistController {
+export default class ArtistController implements IArtistController {
     private artistUseCase: ArtistUseCase;
     private logger: Logger;
 

@@ -3,8 +3,9 @@ import { UserUseCase } from '@src/application/usecases/UserUseCase';
 import { UserDTO, SignInDTO } from '@src/domain/entities/user';
 import { UserRepository } from '@src/infrastructure/persistence/repositories/user';
 import { Logger } from 'winston';
+import IUserController from '@src/domain/interfaces/IUserController';
 
-export class UserController {
+export class UserController implements IUserController {
     private userUseCase: UserUseCase;
     private logger: Logger;
 

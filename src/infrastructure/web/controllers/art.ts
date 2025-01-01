@@ -5,8 +5,9 @@ import { ArtUseCase } from '@src/application/usecases/ArtUseCase';
 import { ArtRepository } from '@src/infrastructure/persistence/repositories/art';
 import { Logger } from 'winston';
 import { CreateArtDTO, UpdateArtDTO, SearchArtDTO, CreateArtResponse, UpdatedArtResponse, GetLatestArtResponse, GetArtResponse } from '@src/domain/entities/art';
+import IArtController from '@src/domain/interfaces/IArtController';
 
-export default class ArtController {
+export default class ArtController implements IArtController {
     private artUseCase: ArtUseCase;
     private logger: Logger;
 
