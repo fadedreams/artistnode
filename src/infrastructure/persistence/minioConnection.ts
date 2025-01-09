@@ -110,7 +110,7 @@ export default class MinIOConnection {
                     await this.connectWithRetry();  // Attempt to reconnect
                 }
             }
-        }, 5000); // Check every 5 seconds (adjustable interval)
+        }, 15000); // Check every 15 seconds (adjustable interval)
     }
 
     // Helper function to reset client state if needed

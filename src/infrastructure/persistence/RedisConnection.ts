@@ -12,7 +12,6 @@ class RedisConnection {
         this.connectWithRetry(); // Automatically initialize Redis connection on instantiation
     }
 
-    // Method to initialize Redis connection with retries
     public async connectWithRetry(maxRetries: number = 10): Promise<void> {
         let retries = 0;
         this.client = null;
@@ -24,8 +23,8 @@ class RedisConnection {
             client = await this.connectToRedis();
 
             if (client) {
-                this.client = client; // Set the connected Redis client
-                this.startHealthCheck(); // Start health check after successful connection
+                this.client = client;
+                this.startHealthCheck();
                 return;
             }
 
@@ -36,33 +35,31 @@ class RedisConnection {
         this.logger.error('Unable to connect to Redis after multiple attempts.');
     }
 
-    // Method to attempt connection to Redis
     private async connectToRedis(): Promise<RedisClientType | null> {
         const client = createClient({
-            url: process.env.REDIS_URL || 'redis://localhost:6379', // Use environment variable or fallback to localhost
+            url: process.env.REDIS_URL || 'redis://localhost:6379',
         }) as RedisClientType;
 
         client.on('error', (err) => {
             if (err.code === 'ECONNREFUSED' || err.code === 'ENOTFOUND') {
                 this.logger.info('Redis connection error detected. Retrying...');
             }
-            this.status.connected = false; // Update status on error
+            this.status.connected = false;
         });
 
         try {
             this.logger.info('Attempting to connect to Redis...');
             await client.connect();
             this.logger.info('Connected to Redis');
-            this.status.connected = true; // Update status on successful connection
+            this.status.connected = true;
             return client;
         } catch (error) {
             this.logger.error('Error connecting to Redis:', error.message);
-            this.status.connected = false; // Update status on failure
+            this.status.connected = false;
             return null;
         }
     }
 
-    // Method to start health check
     private startHealthCheck(): void {
         if (this.healthCheckInterval) {
             clearInterval(this.healthCheckInterval);
@@ -76,29 +73,26 @@ class RedisConnection {
             }
 
             try {
-                await this.client.ping(); // Simple ping to check health
+                await this.client.ping();
                 this.logger.info('Redis health check successful.');
             } catch (error) {
                 this.logger.error('Redis health check failed:', error);
                 this.status.connected = false;
                 this.client = null;
                 clearInterval(this.healthCheckInterval!);
-                this.connectWithRetry(); // Retry connection if health check fails
+                this.connectWithRetry();
             }
-        }, 10000); // Check every 10 seconds
+        }, 10000);
     }
 
-    // Method to get the Redis client
     public getClient(): RedisClientType | null {
         return this.client;
     }
 
-    // Method to check the connection status
     public getStatus(): { connected: boolean } {
         return this.status;
     }
 
-    // Method to close the Redis connection
     public async disconnect(): Promise<void> {
         if (this.client) {
             await this.client.quit();
@@ -108,7 +102,6 @@ class RedisConnection {
         }
     }
 
-    // Method to stop health check
     public stopHealthCheck(): void {
         if (this.healthCheckInterval) {
             clearInterval(this.healthCheckInterval);
