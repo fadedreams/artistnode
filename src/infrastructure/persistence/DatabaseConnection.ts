@@ -11,6 +11,7 @@ class Database {
     private circuitBreakerCooldown: number; // Cooldown time in ms
     private lastFailureTime: number; // Time of last failure
     private logger: Logger; // Logger instance
+    private healthCheckInterval: NodeJS.Timeout | null = null; // Health check interval
 
     // Instance-level variable to track MongoDB connection status
     public isConnected: boolean = false; // Initially set to false
@@ -21,7 +22,8 @@ class Database {
         databaseUrl: string = process.env.DB_URI || 'mongodb://localhost:27017/artistdb1',
         maxRetries: number = 5,
         retryDelay: number = 2000, // Delay between retries (in ms)
-        circuitBreakerCooldown: number = 30000 // Cooldown time for circuit breaker (30 seconds)
+        circuitBreakerCooldown: number = 30000, // Cooldown time for circuit breaker (30 seconds)
+        healthCheckIntervalMs: number = 10000 // Health check interval (10 seconds)
     ) {
         this.logger = logger;
         this.databaseUrl = databaseUrl;
@@ -32,6 +34,7 @@ class Database {
         this.lastFailureTime = 0; // Initialize time of last failure
         this.currentRetries = 0;
         this.connectWithRetry();
+        this.startHealthCheck(healthCheckIntervalMs); // Start health check
     }
 
     // Static method to get the Singleton instance
@@ -40,10 +43,18 @@ class Database {
         databaseUrl?: string,
         maxRetries?: number,
         retryDelay?: number,
-        circuitBreakerCooldown?: number
+        circuitBreakerCooldown?: number,
+        healthCheckIntervalMs?: number
     ): Database {
         if (!Database.instance) {
-            Database.instance = new Database(logger, databaseUrl, maxRetries, retryDelay, circuitBreakerCooldown);
+            Database.instance = new Database(
+                logger,
+                databaseUrl,
+                maxRetries,
+                retryDelay,
+                circuitBreakerCooldown,
+                healthCheckIntervalMs
+            );
         }
         return Database.instance;
     }
@@ -101,6 +112,42 @@ class Database {
         }
     }
 
+    // Method to start health check
+    private startHealthCheck(intervalMs: number): void {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+        }
+
+        this.healthCheckInterval = setInterval(async () => {
+            if (!mongoose.connection || mongoose.connection.readyState !== 1) {
+                this.logger.error('MongoDB connection is not active.');
+                this.isConnected = false;
+                await this.connectWithRetry(); // Attempt to reconnect
+                return;
+            }
+
+            try {
+                // Ping the database to check health
+                await mongoose.connection.db.admin().ping();
+                this.logger.info('MongoDB health check successful.');
+                this.isConnected = true;
+            } catch (error) {
+                this.logger.error('MongoDB health check failed:', error);
+                this.isConnected = false;
+                await this.connectWithRetry(); // Attempt to reconnect
+            }
+        }, intervalMs); // Check every `intervalMs` milliseconds
+    }
+
+    // Method to stop health check
+    public stopHealthCheck(): void {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval);
+            this.healthCheckInterval = null;
+        }
+    }
+
+    // Method to monitor connection events
     public monitorConnection() {
         mongoose.connection.on('disconnected', async () => {
             this.logger.warn('MongoDB connection lost. Attempting to reconnect...');
