@@ -17,7 +17,7 @@ import { ValidationError, DatabaseError } from '@src/domain/errors/CustomErrors'
 
 // Import the new Database class
 import Database from '@src/infrastructure/persistence/DatabaseConnection';
-import ElasticsearchConnection from '@src/infrastructure/persistence/ElasticsearchConnection';
+// import ElasticsearchConnection from '@src/infrastructure/persistence/ElasticsearchConnection';
 import RedisConnection from '@src/infrastructure/persistence/RedisConnection';
 import MinIOConnection from '@src/infrastructure/persistence/minioConnection';
 
@@ -55,7 +55,7 @@ export default class App {
     private port: number;
     private logger: Logger;
     private database: Database;
-    private elasticsearchConnection: ElasticsearchConnection;
+    // private elasticsearchConnection: ElasticsearchConnection;
     private redisConnection: RedisConnection;
     private minio: MinIOConnection;
 
@@ -70,7 +70,7 @@ export default class App {
         this.database.monitorConnection(); // Call monitorConnection to handle reconnection logic
 
         // Initialize Elasticsearch and Redis connections
-        this.elasticsearchConnection = new ElasticsearchConnection(this.logger);
+        // this.elasticsearchConnection = new ElasticsearchConnection(this.logger);
         this.redisConnection = new RedisConnection(this.logger);
 
         // Initialize MinIOConnection
@@ -118,21 +118,22 @@ export default class App {
 
     private initializeRoutes() {
         // Get the Elasticsearch client
-        const elk_client = this.elasticsearchConnection.getClient();
+        // const elk_client = this.elasticsearchConnection.getClient();
 
         // Define routes
         this.app.use('/api/artist', artistRouter(this.logger, this.redisConnection));
         this.app.use('/api/art', artRouter(this.logger, this.redisConnection));
         // this.app.use('/api/user', userRouter(this.logger, this.redisConnection, elk_client));
         this.app.use('/api/user', userRouter(this.logger, this.redisConnection));
-        this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection, elk_client));
+        // this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection, elk_client));
+        this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection));
 
         // Health check endpoint
         this.app.get('/health', async (req, res) => {
             const status = {
                 database: this.database.isConnected,
                 redis: this.redisConnection.getStatus().connected,
-                elasticsearch: this.elasticsearchConnection.getStatus().connected,
+                // elasticsearch: this.elasticsearchConnection.getStatus().connected,
             };
 
             const isHealthy = Object.values(status).every((s) => s);
@@ -195,18 +196,18 @@ export default class App {
         }
     }
 
-    private async checkElasticsearchConnection(): Promise<void> {
-        if (!this.elasticsearchConnection.getStatus().connected) {
-            await this.elasticsearchConnection.retryConnection();
-        }
-
-        const elk_client = this.elasticsearchConnection.getClient();
-        if (elk_client) {
-            this.logger.info('Elasticsearch client is ready.');
-        } else {
-            this.logger.error('Failed to connect to Elasticsearch.');
-        }
-    }
+    // private async checkElasticsearchConnection(): Promise<void> {
+    //     if (!this.elasticsearchConnection.getStatus().connected) {
+    //         await this.elasticsearchConnection.retryConnection();
+    //     }
+    //
+    //     const elk_client = this.elasticsearchConnection.getClient();
+    //     if (elk_client) {
+    //         this.logger.info('Elasticsearch client is ready.');
+    //     } else {
+    //         this.logger.error('Failed to connect to Elasticsearch.');
+    //     }
+    // }
 
     private async connectToDatabase(): Promise<void> {
         try {
@@ -269,7 +270,7 @@ export default class App {
 
         await this.connectToDatabase();
         await this.checkRedisConnection();
-        await this.checkElasticsearchConnection();
+        // await this.checkElasticsearchConnection();
         await this.checkMinioConnection();
         await this.startServer();
     }
@@ -288,11 +289,11 @@ export default class App {
             }
 
             // Close Elasticsearch connection (if applicable)
-            if (this.elasticsearchConnection.getClient()) {
-                this.logger.info('Closing Elasticsearch connection...');
-                // Add Elasticsearch cleanup logic here
-                this.logger.info('Elasticsearch connection closed.');
-            }
+            // if (this.elasticsearchConnection.getClient()) {
+            //     this.logger.info('Closing Elasticsearch connection...');
+            //     // Add Elasticsearch cleanup logic here
+            //     this.logger.info('Elasticsearch connection closed.');
+            // }
 
             // Close MinIO connection (if applicable)
             // Add MinIO cleanup logic here
