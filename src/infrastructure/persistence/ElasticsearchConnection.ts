@@ -79,6 +79,20 @@ class ElasticsearchConnection {
             this.healthCheckInterval = null;
         }
     }
+    public async close(): Promise<void> {
+        if (this.client) {
+            try {
+                await this.client.close();
+                this.logger.info('Elasticsearch connection closed.');
+            } catch (error) {
+                this.logger.error('Error closing Elasticsearch connection:', error);
+            } finally {
+                this.client = null;
+                this.status.connected = false;
+                this.stopHealthCheck();
+            }
+        }
+    }
 }
 
 export default ElasticsearchConnection;

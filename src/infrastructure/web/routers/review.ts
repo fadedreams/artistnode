@@ -6,7 +6,7 @@ import { validateRatings, validate } from '@src/infrastructure/web/middlewares/v
 import { Client } from '@elastic/elasticsearch';
 import ElasticsearchConnection from '@src/infrastructure/persistence/ElasticsearchConnection';
 
-class ReviewRouter {
+export class ReviewRouter {
     private router: Router;
     private logger: Logger;
     private reviewController: ReviewController;
@@ -211,6 +211,14 @@ class ReviewRouter {
 
     public getRouter(): Router {
         return this.router;
+    }
+
+    public async closeElasticsearchConnection(): Promise<void> {
+        if (this.elasticsearchConnection) {
+            await this.elasticsearchConnection.close();
+            this.elasticsearchConnection = null;
+            this.logger.info('Elasticsearch connection closed.');
+        }
     }
 }
 

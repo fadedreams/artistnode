@@ -10,7 +10,7 @@ import mongoose from 'mongoose';
 import userRouter from '@src/infrastructure/web/routers/user';
 import artistRouter from '@src/infrastructure/web/routers/artist';
 import artRouter from '@src/infrastructure/web/routers/art';
-import reviewRouter from '@src/infrastructure/web/routers/review';
+import reviewRouter, { ReviewRouter } from '@src/infrastructure/web/routers/review';
 
 import { Logger } from 'winston';
 import { ValidationError, DatabaseError } from '@src/domain/errors/CustomErrors'
@@ -58,6 +58,7 @@ export default class App {
     // private elasticsearchConnection: ElasticsearchConnection;
     private redisConnection: RedisConnection;
     private minio: MinIOConnection;
+    private reviewRouterInstance: ReviewRouter; // Store the ReviewRouter instance
 
     constructor(logger: Logger) {
         this.app = express();
@@ -79,7 +80,7 @@ export default class App {
             process.env.MINIO_USER as string,
             process.env.MINIO_PASS as string
         );
-
+        this.reviewRouterInstance = new ReviewRouter(logger, this.redisConnection);
         this.initializeMiddlewares();
         this.initializeRoutes();
     }
@@ -126,7 +127,8 @@ export default class App {
         // this.app.use('/api/user', userRouter(this.logger, this.redisConnection, elk_client));
         this.app.use('/api/user', userRouter(this.logger, this.redisConnection));
         // this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection, elk_client));
-        this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection));
+        // this.app.use('/api/review', reviewRouter(this.logger, this.redisConnection));
+        this.app.use('/api/review', this.reviewRouterInstance.getRouter());
 
         // Health check endpoint
         this.app.get('/health', async (req, res) => {
@@ -288,15 +290,15 @@ export default class App {
                 this.logger.info('Redis connection closed.');
             }
 
-            // Close Elasticsearch connection (if applicable)
-            // if (this.elasticsearchConnection.getClient()) {
-            //     this.logger.info('Closing Elasticsearch connection...');
-            //     // Add Elasticsearch cleanup logic here
-            //     this.logger.info('Elasticsearch connection closed.');
-            // }
+            // Close the Elasticsearch connection
+            this.logger.info('Closing Elasticsearch connection...');
+            await this.reviewRouterInstance.closeElasticsearchConnection();
+            this.logger.info('Elasticsearch connection closed.');
 
-            // Close MinIO connection (if applicable)
-            // Add MinIO cleanup logic here
+            // Close the MinIO connection
+            this.logger.info('Closing MinIO connection...');
+            await this.minio.close();
+            this.logger.info('MinIO connection closed.');
         } catch (error) {
             this.logger.error('Error during shutdown:', { error: error });
         }

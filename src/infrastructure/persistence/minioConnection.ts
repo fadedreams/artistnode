@@ -5,6 +5,7 @@ export default class MinIOConnection {
     private maxRetries: number;
     private retryDelay: number;  // Retry delay in milliseconds
     private isConnected: boolean = false;  // Track the connection status
+    private healthCheckInterval: NodeJS.Timeout | null = null; // Interval for monitoring connection
 
     constructor(
         private minioServer: string,
@@ -98,7 +99,7 @@ export default class MinIOConnection {
 
     // Monitor connection periodically to check if it's still active
     public async monitorConnection(): Promise<void> {
-        setInterval(async () => {
+        this.healthCheckInterval = setInterval(async () => {
             if (this.isConnected) {
                 try {
                     // Check if MinIO is still connected by listing buckets
@@ -128,5 +129,19 @@ export default class MinIOConnection {
     // Getter to check if MinIO is connected
     public getConnectionStatus(): boolean {
         return this.isConnected;
+    }
+
+    // Close the MinIO connection and clean up resources
+    public async close(): Promise<void> {
+        if (this.healthCheckInterval) {
+            clearInterval(this.healthCheckInterval); // Stop the health check interval
+            this.healthCheckInterval = null;
+        }
+
+        // Reset the client and connection status
+        this.minioClient = null as any; // Reset the client
+        this.isConnected = false;
+
+        console.log('MinIO connection closed.');
     }
 }
